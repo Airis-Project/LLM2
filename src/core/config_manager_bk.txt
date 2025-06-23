@@ -1,0 +1,315 @@
+# src/core/config_manager.py
+"""
+設定管理モジュール
+アプリケーションの設定を一元管理し、永続化を行う
+"""
+
+import os
+import json
+import yaml
+from typing import Dict, Any, Optional, Union
+from pathlib import Path
+import logging
+from dataclasses import dataclass, asdict
+from cryptography.fernet import Fernet
+import keyring
+
+logger = logging.getLogger(__name__)
+
+@dataclass
+class LLMConfig:
+    """LLM設定のデータクラス"""
+    provider: str = "openai"  # openai, claude, local
+    model: str = "gpt-3.5-turbo"
+    api_key: str = ""
+    base_url: str = ""
+    max_tokens: int = 4096
+    temperature: float = 0.7
+    timeout: int = 30
+
+@dataclass
+class VectorDBConfig:
+    """ベクターDB設定のデータクラス"""
+    provider: str = "chroma"  # chroma, faiss
+    persist_directory: str = "./data/vectordb"
+    collection_name: str = "code_assistant"
+    embedding_model: str = "all-MiniLM-L6-v2"
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
+
+@dataclass
+class UIConfig:
+    """UI設定のデータクラス"""
+    theme: str = "dark"
+    language: str = "ja"
+    font_family: str = "Consolas"
+    font_size: int = 12
+    window_width: int = 1200
+    window_height: int = 800
+    auto_save: bool = True
+    auto_save_interval: int = 300  # seconds
+
+@dataclass
+class AppConfig:
+    """アプリケーション全体の設定"""
+    llm: LLMConfig
+    vectordb: VectorDBConfig
+    ui: UIConfig
+    debug: bool = False
+    log_level: str = "INFO"
+    max_conversation_history: int = 100
+    backup_enabled: bool = True
+    backup_interval: int = 3600  # seconds
+
+class ConfigManager:
+    """設定管理クラス"""
+    
+    def __init__(self, config_dir: Optional[str] = None):
+        """
+        初期化
+        
+        Args:
+            config_dir: 設定ファイルのディレクトリパス
+        """
+        self.config_dir = Path(config_dir or "./config")
+        self.config_file = self.config_dir / "settings.json"
+        self.default_config_file = self.config_dir / "default_settings.json"
+        self.encryption_key = self._get_or_create_encryption_key()
+        self.config: AppConfig = self._load_config()
+        
+    def _get_or_create_encryption_key(self) -> bytes:
+        """暗号化キーを取得または作成"""
+        try:
+            # キーリングからキーを取得
+            key_str = keyring.get_password("llm_code_assistant", "encryption_key")
+            if key_str:
+                return key_str.encode()
+            
+            # 新しいキーを生成
+            key = Fernet.generate_key()
+            keyring.set_password("llm_code_assistant", "encryption_key", key.decode())
+            return key
+            
+        except Exception as e:
+            logger.warning(f"キーリングの使用に失敗: {e}")
+            # フォールバック: ローカルファイル
+            key_file = self.config_dir / ".encryption_key"
+            if key_file.exists():
+                return key_file.read_bytes()
+            
+            key = Fernet.generate_key()
+            key_file.write_bytes(key)
+            return key
+    
+    def _encrypt_sensitive_data(self, data: str) -> str:
+        """機密データを暗号化"""
+        try:
+            fernet = Fernet(self.encryption_key)
+            return fernet.encrypt(data.encode()).decode()
+        except Exception as e:
+            logger.error(f"暗号化エラー: {e}")
+            return data
+    
+    def _decrypt_sensitive_data(self, encrypted_data: str) -> str:
+        """機密データを復号化"""
+        try:
+            fernet = Fernet(self.encryption_key)
+            return fernet.decrypt(encrypted_data.encode()).decode()
+        except Exception as e:
+            logger.error(f"復号化エラー: {e}")
+            return encrypted_data
+    
+    def _load_default_config(self) -> AppConfig:
+        """デフォルト設定を読み込み"""
+        default_config = {
+            "llm": {
+                "provider": "openai",
+                "model": "gpt-3.5-turbo",
+                "api_key": "",
+                "base_url": "",
+                "max_tokens": 4096,
+                "temperature": 0.7,
+                "timeout": 30
+            },
+            "vectordb": {
+                "provider": "chroma",
+                "persist_directory": "./data/vectordb",
+                "collection_name": "code_assistant",
+                "embedding_model": "all-MiniLM-L6-v2",
+                "chunk_size": 1000,
+                "chunk_overlap": 200
+            },
+            "ui": {
+                "theme": "dark",
+                "language": "ja",
+                "font_family": "Consolas",
+                "font_size": 12,
+                "window_width": 1200,
+                "window_height": 800,
+                "auto_save": True,
+                "auto_save_interval": 300
+            },
+            "debug": False,
+            "log_level": "INFO",
+            "max_conversation_history": 100,
+            "backup_enabled": True,
+            "backup_interval": 3600
+        }
+        
+        # デフォルト設定ファイルが存在する場合は読み込み
+        if self.default_config_file.exists():
+            try:
+                with open(self.default_config_file, 'r', encoding='utf-8') as f:
+                    file_config = json.load(f)
+                    default_config.update(file_config)
+            except Exception as e:
+                logger.warning(f"デフォルト設定ファイルの読み込みに失敗: {e}")
+        
+        return AppConfig(
+            llm=LLMConfig(**default_config["llm"]),
+            vectordb=VectorDBConfig(**default_config["vectordb"]),
+            ui=UIConfig(**default_config["ui"]),
+            debug=default_config["debug"],
+            log_level=default_config["log_level"],
+            max_conversation_history=default_config["max_conversation_history"],
+            backup_enabled=default_config["backup_enabled"],
+            backup_interval=default_config["backup_interval"]
+        )
+    
+    def _load_config(self) -> AppConfig:
+        """設定を読み込み"""
+        try:
+            if not self.config_file.exists():
+                logger.info("設定ファイルが存在しないため、デフォルト設定を使用")
+                return self._load_default_config()
+            
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                config_data = json.load(f)
+            
+            # APIキーなどの機密データを復号化
+            if config_data.get("llm", {}).get("api_key"):
+                config_data["llm"]["api_key"] = self._decrypt_sensitive_data(
+                    config_data["llm"]["api_key"]
+                )
+            
+            return AppConfig(
+                llm=LLMConfig(**config_data.get("llm", {})),
+                vectordb=VectorDBConfig(**config_data.get("vectordb", {})),
+                ui=UIConfig(**config_data.get("ui", {})),
+                debug=config_data.get("debug", False),
+                log_level=config_data.get("log_level", "INFO"),
+                max_conversation_history=config_data.get("max_conversation_history", 100),
+                backup_enabled=config_data.get("backup_enabled", True),
+                backup_interval=config_data.get("backup_interval", 3600)
+            )
+            
+        except Exception as e:
+            logger.error(f"設定ファイルの読み込みに失敗: {e}")
+            return self._load_default_config()
+    
+    def save_config(self) -> bool:
+        """設定を保存"""
+        try:
+            # ディレクトリが存在しない場合は作成
+            self.config_dir.mkdir(parents=True, exist_ok=True)
+            
+            # 設定をディクショナリに変換
+            config_dict = asdict(self.config)
+            
+            # APIキーなどの機密データを暗号化
+            if config_dict["llm"]["api_key"]:
+                config_dict["llm"]["api_key"] = self._encrypt_sensitive_data(
+                    config_dict["llm"]["api_key"]
+                )
+            
+            # ファイルに保存
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(config_dict, f, indent=2, ensure_ascii=False)
+            
+            logger.info("設定を保存しました")
+            return True
+            
+        except Exception as e:
+            logger.error(f"設定の保存に失敗: {e}")
+            return False
+    
+    def get_config(self) -> AppConfig:
+        """現在の設定を取得"""
+        return self.config
+    
+    def update_llm_config(self, **kwargs) -> None:
+        """LLM設定を更新"""
+        for key, value in kwargs.items():
+            if hasattr(self.config.llm, key):
+                setattr(self.config.llm, key, value)
+    
+    def update_vectordb_config(self, **kwargs) -> None:
+        """VectorDB設定を更新"""
+        for key, value in kwargs.items():
+            if hasattr(self.config.vectordb, key):
+                setattr(self.config.vectordb, key, value)
+    
+    def update_ui_config(self, **kwargs) -> None:
+        """UI設定を更新"""
+        for key, value in kwargs.items():
+            if hasattr(self.config.ui, key):
+                setattr(self.config.ui, key, value)
+    
+    def reset_to_default(self) -> None:
+        """設定をデフォルトにリセット"""
+        self.config = self._load_default_config()
+        logger.info("設定をデフォルトにリセットしました")
+    
+    def export_config(self, export_path: str) -> bool:
+        """設定をエクスポート"""
+        try:
+            config_dict = asdict(self.config)
+            # 機密データは除外
+            config_dict["llm"]["api_key"] = ""
+            
+            with open(export_path, 'w', encoding='utf-8') as f:
+                json.dump(config_dict, f, indent=2, ensure_ascii=False)
+            
+            logger.info(f"設定をエクスポートしました: {export_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"設定のエクスポートに失敗: {e}")
+            return False
+    
+    def import_config(self, import_path: str) -> bool:
+        """設定をインポート"""
+        try:
+            with open(import_path, 'r', encoding='utf-8') as f:
+                config_data = json.load(f)
+            
+            # 既存の設定と統合
+            if "llm" in config_data:
+                self.update_llm_config(**config_data["llm"])
+            if "vectordb" in config_data:
+                self.update_vectordb_config(**config_data["vectordb"])
+            if "ui" in config_data:
+                self.update_ui_config(**config_data["ui"])
+            
+            for key in ["debug", "log_level", "max_conversation_history", 
+                       "backup_enabled", "backup_interval"]:
+                if key in config_data:
+                    setattr(self.config, key, config_data[key])
+            
+            logger.info(f"設定をインポートしました: {import_path}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"設定のインポートに失敗: {e}")
+            return False
+
+# グローバル設定マネージャーインスタンス
+config_manager = ConfigManager()
+
+def get_config() -> AppConfig:
+    """グローバル設定を取得"""
+    return config_manager.get_config()
+
+def save_config() -> bool:
+    """グローバル設定を保存"""
+    return config_manager.save_config()

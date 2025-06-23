@@ -1,0 +1,291 @@
+#src/ui/main_window.py
+"""
+メインウィンドウモジュール
+アプリケーションのメインUIを提供
+"""
+
+import sys
+import logging
+from typing import Optional, Dict, Any
+from pathlib import Path
+
+from PyQt6.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
+    QWidget, QPushButton, QTextEdit, QLineEdit, QLabel,
+    QSplitter, QTreeWidget, QTreeWidgetItem, QTabWidget,
+    QMenuBar, QMenu, QStatusBar, QToolBar
+)
+from PyQt6.QtGui import QAction  # 修正：QActionはQtGuiからインポート
+from PyQt6.QtCore import Qt, pyqtSignal
+
+from ..core.config_manager import get_config
+from ..core.event_system import get_event_bus
+from ..core.plugin_manager import get_plugin_manager
+
+logger = logging.getLogger(__name__)
+
+class MainWindow(QMainWindow):
+    """
+    メインウィンドウクラス
+    アプリケーションのメインUIを管理
+    """
+    
+    # シグナル定義
+    window_closed = pyqtSignal()
+    
+    def __init__(self):
+        """メインウィンドウを初期化"""
+        super().__init__()
+        
+        # 設定とコアコンポーネントの取得
+        self.config = get_config()
+        self.event_bus = get_event_bus()
+        self.plugin_manager = get_plugin_manager()
+        
+        # UI初期化
+        self.init_ui()
+        self.setup_menu()
+        self.setup_toolbar()
+        self.setup_statusbar()
+        
+        # イベント接続
+        self.connect_events()
+        
+        logger.info("メインウィンドウが初期化されました")
+    
+    def init_ui(self):
+        """UIを初期化"""
+        # ウィンドウ設定
+        self.setWindowTitle(self.config.get('app_name', 'LLM Application'))
+        self.setGeometry(100, 100, 1200, 800)
+        
+        # 中央ウィジェット
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+        
+        # メインレイアウト
+        main_layout = QHBoxLayout(central_widget)
+        
+        # スプリッター
+        splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_layout.addWidget(splitter)
+        
+        # 左パネル（プロジェクトツリー）
+        self.setup_left_panel(splitter)
+        
+        # 右パネル（メインエリア）
+        self.setup_right_panel(splitter)
+        
+        # スプリッターの比率設定
+        splitter.setSizes([300, 900])
+    
+    def setup_left_panel(self, parent):
+        """左パネルを設定"""
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        
+        # プロジェクトツリー
+        self.project_tree = QTreeWidget()
+        self.project_tree.setHeaderLabel("プロジェクト")
+        left_layout.addWidget(self.project_tree)
+        
+        parent.addWidget(left_widget)
+    
+    def setup_right_panel(self, parent):
+        """右パネルを設定"""
+        right_widget = QWidget()
+        right_layout = QVBoxLayout(right_widget)
+        
+        # タブウィジェット
+        self.tab_widget = QTabWidget()
+        right_layout.addWidget(self.tab_widget)
+        
+        # チャットタブ
+        self.setup_chat_tab()
+        
+        parent.addWidget(right_widget)
+    
+    def setup_chat_tab(self):
+        """チャットタブを設定"""
+        chat_widget = QWidget()
+        chat_layout = QVBoxLayout(chat_widget)
+        
+        # チャット表示エリア
+        self.chat_display = QTextEdit()
+        self.chat_display.setReadOnly(True)
+        chat_layout.addWidget(self.chat_display)
+        
+        # 入力エリア
+        input_layout = QHBoxLayout()
+        self.chat_input = QLineEdit()
+        self.send_button = QPushButton("送信")
+        
+        input_layout.addWidget(self.chat_input)
+        input_layout.addWidget(self.send_button)
+        chat_layout.addLayout(input_layout)
+        
+        self.tab_widget.addTab(chat_widget, "チャット")
+        
+        # イベント接続
+        self.send_button.clicked.connect(self.send_message)
+        self.chat_input.returnPressed.connect(self.send_message)
+    
+    def setup_menu(self):
+        """メニューバーを設定"""
+        menubar = self.menuBar()
+        
+        # ファイルメニュー
+        file_menu = menubar.addMenu('ファイル(&F)')
+        
+        # 新規作成アクション
+        new_action = QAction('新規作成(&N)', self)
+        new_action.setShortcut('Ctrl+N')
+        new_action.triggered.connect(self.new_file)
+        file_menu.addAction(new_action)
+        
+        # 開くアクション
+        open_action = QAction('開く(&O)', self)
+        open_action.setShortcut('Ctrl+O')
+        open_action.triggered.connect(self.open_file)
+        file_menu.addAction(open_action)
+        
+        file_menu.addSeparator()
+        
+        # 終了アクション
+        exit_action = QAction('終了(&X)', self)
+        exit_action.setShortcut('Ctrl+Q')
+        exit_action.triggered.connect(self.close)
+        file_menu.addAction(exit_action)
+        
+        # 編集メニュー
+        edit_menu = menubar.addMenu('編集(&E)')
+        
+        # ヘルプメニュー
+        help_menu = menubar.addMenu('ヘルプ(&H)')
+        
+        # バージョン情報アクション
+        about_action = QAction('バージョン情報(&A)', self)
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+    
+    def setup_toolbar(self):
+        """ツールバーを設定"""
+        toolbar = self.addToolBar('メイン')
+        
+        # 新規作成ボタン
+        new_action = QAction('新規', self)
+        new_action.triggered.connect(self.new_file)
+        toolbar.addAction(new_action)
+        
+        # 開くボタン
+        open_action = QAction('開く', self)
+        open_action.triggered.connect(self.open_file)
+        toolbar.addAction(open_action)
+        
+        toolbar.addSeparator()
+        
+        # 保存ボタン
+        save_action = QAction('保存', self)
+        save_action.triggered.connect(self.save_file)
+        toolbar.addAction(save_action)
+    
+    def setup_statusbar(self):
+        """ステータスバーを設定"""
+        self.statusBar().showMessage('準備完了')
+    
+    def connect_events(self):
+        """イベントを接続"""
+        # イベントバスからのイベントを購読
+        self.event_bus.subscribe('message_received', self.on_message_received)
+        self.event_bus.subscribe('status_update', self.on_status_update)
+    
+    def send_message(self):
+        """メッセージを送信"""
+        message = self.chat_input.text().strip()
+        if not message:
+            return
+        
+        # チャット表示に追加
+        self.chat_display.append(f"ユーザー: {message}")
+        
+        # 入力欄をクリア
+        self.chat_input.clear()
+        
+        # イベントを発行
+        self.event_bus.emit('message_sent', {'message': message})
+        
+        logger.info(f"メッセージを送信: {message}")
+    
+    def on_message_received(self, data: Dict[str, Any]):
+        """メッセージ受信時の処理"""
+        message = data.get('message', '')
+        sender = data.get('sender', 'システム')
+        
+        self.chat_display.append(f"{sender}: {message}")
+    
+    def on_status_update(self, data: Dict[str, Any]):
+        """ステータス更新時の処理"""
+        status = data.get('status', '')
+        self.statusBar().showMessage(status)
+    
+    def new_file(self):
+        """新規ファイル作成"""
+        logger.info("新規ファイル作成")
+        self.statusBar().showMessage("新規ファイルを作成しました")
+    
+    def open_file(self):
+        """ファイルを開く"""
+        logger.info("ファイルを開く")
+        self.statusBar().showMessage("ファイルを開きました")
+    
+    def save_file(self):
+        """ファイルを保存"""
+        logger.info("ファイルを保存")
+        self.statusBar().showMessage("ファイルを保存しました")
+    
+    def show_about(self):
+        """バージョン情報を表示"""
+        from PyQt6.QtWidgets import QMessageBox
+        
+        app_name = self.config.get('app_name', 'LLM Application')
+        version = self.config.get('version', '1.0.0')
+        
+        QMessageBox.about(
+            self,
+            'バージョン情報',
+            f'{app_name}\nバージョン: {version}'
+        )
+    
+    def closeEvent(self, event):
+        """ウィンドウクローズイベント"""
+        logger.info("メインウィンドウを閉じています...")
+        
+        # シグナル発行
+        self.window_closed.emit()
+        
+        # イベントバスのクリーンアップ
+        if hasattr(self, 'event_bus'):
+            self.event_bus.unsubscribe_all()
+        
+        # プラグインマネージャーのクリーンアップ
+        if hasattr(self, 'plugin_manager'):
+            self.plugin_manager.cleanup()
+        
+        event.accept()
+        logger.info("メインウィンドウが閉じられました")
+
+
+def main():
+    """メイン関数"""
+    app = QApplication(sys.argv)
+    
+    # メインウィンドウ作成
+    window = MainWindow()
+    window.show()
+    
+    # アプリケーション実行
+    sys.exit(app.exec())
+
+
+if __name__ == '__main__':
+    main()

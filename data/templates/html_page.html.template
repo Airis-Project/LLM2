@@ -1,0 +1,724 @@
+<!-- data/templates/html_page.html.template -->
+<!-- HTMLページテンプレート - LLM Code Assistant用 -->
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="{{description}}">
+    <meta name="keywords" content="{{keywords}}">
+    <meta name="author" content="{{author}}">
+    <meta name="robots" content="index, follow">
+    <meta name="theme-color" content="{{theme_color}}">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="{{title}}">
+    <meta property="og:description" content="{{description}}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{page_url}}">
+    <meta property="og:image" content="{{og_image}}">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{title}}">
+    <meta name="twitter:description" content="{{description}}">
+    <meta name="twitter:image" content="{{twitter_image}}">
+    
+    <title>{{title}}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{favicon_path}}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{apple_touch_icon}}">
+    
+    <!-- CSS Links -->
+    <link rel="stylesheet" href="{{css_framework_url}}">
+    <link rel="stylesheet" href="{{custom_css_path}}">
+    
+    <!-- Font Links -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="{{font_url}}" rel="stylesheet">
+    
+    <!-- Inline CSS -->
+    <style>
+        /* 基本スタイル */
+        :root {
+            --primary-color: {{primary_color}};
+            --secondary-color: {{secondary_color}};
+            --accent-color: {{accent_color}};
+            --background-color: {{background_color}};
+            --text-color: {{text_color}};
+            --border-color: {{border_color}};
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+            --transition-duration: 0.3s;
+            --font-family-primary: {{font_family}};
+            --font-size-base: 16px;
+            --line-height-base: 1.6;
+            --spacing-unit: 1rem;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-family-primary);
+            font-size: var(--font-size-base);
+            line-height: var(--line-height-base);
+            color: var(--text-color);
+            background-color: var(--background-color);
+            overflow-x: hidden;
+        }
+        
+        /* ヘッダースタイル */
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: var(--spacing-unit) 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+        
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-unit);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .nav {
+            display: flex;
+            list-style: none;
+            gap: calc(var(--spacing-unit) * 2);
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            transition: opacity var(--transition-duration);
+        }
+        
+        .nav-link:hover {
+            opacity: 0.8;
+        }
+        
+        /* メインコンテンツスタイル */
+        .main {
+            min-height: calc(100vh - 200px);
+            padding: calc(var(--spacing-unit) * 2) 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--spacing-unit);
+        }
+        
+        .section {
+            margin-bottom: calc(var(--spacing-unit) * 3);
+        }
+        
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: var(--spacing-unit);
+            color: var(--primary-color);
+            text-align: center;
+        }
+        
+        .section-subtitle {
+            font-size: 1.2rem;
+            margin-bottom: calc(var(--spacing-unit) * 1.5);
+            color: var(--secondary-color);
+            text-align: center;
+        }
+        
+        /* カードスタイル */
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: 0 4px 15px var(--shadow-color);
+            padding: calc(var(--spacing-unit) * 1.5);
+            margin-bottom: var(--spacing-unit);
+            transition: transform var(--transition-duration), box-shadow var(--transition-duration);
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px var(--shadow-color);
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: calc(var(--spacing-unit) * 0.5);
+            color: var(--primary-color);
+        }
+        
+        .card-content {
+            color: var(--text-color);
+            line-height: var(--line-height-base);
+        }
+        
+        /* グリッドレイアウト */
+        .grid {
+            display: grid;
+            gap: var(--spacing-unit);
+            margin-bottom: calc(var(--spacing-unit) * 2);
+        }
+        
+        .grid-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+        .grid-3 { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+        .grid-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        
+        /* ボタンスタイル */
+        .btn {
+            display: inline-block;
+            padding: calc(var(--spacing-unit) * 0.75) calc(var(--spacing-unit) * 1.5);
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all var(--transition-duration);
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-accent {
+            background-color: var(--accent-color);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* フォームスタイル */
+        .form-group {
+            margin-bottom: var(--spacing-unit);
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: calc(var(--spacing-unit) * 0.5);
+            font-weight: bold;
+            color: var(--text-color);
+        }
+        
+        .form-input,
+        .form-textarea,
+        .form-select {
+            width: 100%;
+            padding: calc(var(--spacing-unit) * 0.75);
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: border-color var(--transition-duration);
+        }
+        
+        .form-input:focus,
+        .form-textarea:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .form-textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        
+        /* アラートスタイル */
+        .alert {
+            padding: var(--spacing-unit);
+            border-radius: var(--border-radius);
+            margin-bottom: var(--spacing-unit);
+        }
+        
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        /* フッタースタイル */
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: calc(var(--spacing-unit) * 2) 0;
+            margin-top: calc(var(--spacing-unit) * 3);
+        }
+        
+        /* ローディングスタイル */
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .loading.show {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* レスポンシブデザイン */
+        @media (max-width: 768px) {
+            .header-container {
+                flex-direction: column;
+                gap: var(--spacing-unit);
+            }
+            
+            .nav {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .container {
+                padding: 0 calc(var(--spacing-unit) * 0.5);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
+            
+            .btn {
+                width: 100%;
+                margin-bottom: calc(var(--spacing-unit) * 0.5);
+            }
+        }
+        
+        /* ダークモード対応 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #1a1a1a;
+                --text-color: #e0e0e0;
+                --border-color: #404040;
+                --shadow-color: rgba(255, 255, 255, 0.1);
+            }
+            
+            .card {
+                background: #2a2a2a;
+            }
+        }
+        
+        /* アニメーション */
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .slide-in {
+            animation: slideIn 0.6s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); }
+            to { transform: translateX(0); }
+        }
+        
+        /* ユーティリティクラス */
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+        .text-right { text-align: right; }
+        
+        .mt-1 { margin-top: var(--spacing-unit); }
+        .mt-2 { margin-top: calc(var(--spacing-unit) * 2); }
+        .mb-1 { margin-bottom: var(--spacing-unit); }
+        .mb-2 { margin-bottom: calc(var(--spacing-unit) * 2); }
+        
+        .p-1 { padding: var(--spacing-unit); }
+        .p-2 { padding: calc(var(--spacing-unit) * 2); }
+        
+        .d-none { display: none; }
+        .d-block { display: block; }
+        .d-flex { display: flex; }
+        .d-grid { display: grid; }
+        
+        .justify-center { justify-content: center; }
+        .align-center { align-items: center; }
+        
+        /* カスタムスタイル */
+        {{custom_styles}}
+    </style>
+</head>
+
+<body>
+    <!-- ローディング画面 -->
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-container">
+            <a href="{{home_url}}" class="logo">{{site_name}}</a>
+            <nav>
+                <ul class="nav">
+                    {{#navigation_items}}
+                    <li><a href="{{url}}" class="nav-link">{{title}}</a></li>
+                    {{/navigation_items}}
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <!-- メインコンテンツ -->
+    <main class="main">
+        <div class="container">
+            <!-- ヒーローセクション -->
+            {{#hero_section}}
+            <section class="section fade-in">
+                <h1 class="section-title">{{hero_title}}</h1>
+                <p class="section-subtitle">{{hero_subtitle}}</p>
+                {{#hero_buttons}}
+                <div class="text-center mt-2">
+                    <a href="{{url}}" class="btn {{class}}">{{text}}</a>
+                </div>
+                {{/hero_buttons}}
+            </section>
+            {{/hero_section}}
+            
+            <!-- アラート表示エリア -->
+            <div id="alert-container"></div>
+            
+            <!-- 動的コンテンツエリア -->
+            <div id="content-area">
+                {{#sections}}
+                <section class="section fade-in">
+                    {{#title}}<h2 class="section-title">{{title}}</h2>{{/title}}
+                    {{#subtitle}}<p class="section-subtitle">{{subtitle}}</p>{{/subtitle}}
+                    
+                    {{#grid_layout}}
+                    <div class="grid grid-{{columns}}">
+                        {{#items}}
+                        <div class="card">
+                            {{#title}}<h3 class="card-title">{{title}}</h3>{{/title}}
+                            <div class="card-content">
+                                {{content}}
+                            </div>
+                            {{#buttons}}
+                            <div class="mt-1">
+                                <a href="{{url}}" class="btn {{class}}">{{text}}</a>
+                            </div>
+                            {{/buttons}}
+                        </div>
+                        {{/items}}
+                    </div>
+                    {{/grid_layout}}
+                    
+                    {{#form_section}}
+                    <form id="{{form_id}}" class="card">
+                        {{#form_fields}}
+                        <div class="form-group">
+                            <label for="{{id}}" class="form-label">{{label}}</label>
+                            {{#input}}
+                            <input type="{{type}}" id="{{id}}" name="{{name}}" class="form-input" 
+                                   placeholder="{{placeholder}}" {{#required}}required{{/required}}>
+                            {{/input}}
+                            {{#textarea}}
+                            <textarea id="{{id}}" name="{{name}}" class="form-textarea" 
+                                      placeholder="{{placeholder}}" {{#required}}required{{/required}}></textarea>
+                            {{/textarea}}
+                            {{#select}}
+                            <select id="{{id}}" name="{{name}}" class="form-select" {{#required}}required{{/required}}>
+                                {{#options}}
+                                <option value="{{value}}">{{text}}</option>
+                                {{/options}}
+                            </select>
+                            {{/select}}
+                        </div>
+                        {{/form_fields}}
+                        <button type="submit" class="btn">{{submit_text}}</button>
+                    </form>
+                    {{/form_section}}
+                </section>
+                {{/sections}}
+            </div>
+        </div>
+    </main>
+    
+    <!-- フッター -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; {{current_year}} {{site_name}}. {{footer_text}}</p>
+            {{#footer_links}}
+            <div class="mt-1">
+                {{#links}}
+                <a href="{{url}}" style="color: white; margin: 0 10px;">{{text}}</a>
+                {{/links}}
+            </div>
+            {{/footer_links}}
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script src="{{js_framework_url}}"></script>
+    <script>
+        // 基本的なJavaScript機能
+        class PageManager {
+            constructor() {
+                this.init();
+            }
+            
+            init() {
+                this.setupEventListeners();
+                this.hideLoading();
+                this.setupAnimations();
+                this.setupForms();
+            }
+            
+            setupEventListeners() {
+                // ページロード時の処理
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('ページが読み込まれました');
+                });
+                
+                // リサイズイベント
+                window.addEventListener('resize', this.handleResize.bind(this));
+                
+                // スクロールイベント
+                window.addEventListener('scroll', this.handleScroll.bind(this));
+            }
+            
+            hideLoading() {
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    setTimeout(() => {
+                        loading.classList.remove('show');
+                    }, 500);
+                }
+            }
+            
+            showLoading() {
+                const loading = document.getElementById('loading');
+                if (loading) {
+                    loading.classList.add('show');
+                }
+            }
+            
+            setupAnimations() {
+                // Intersection Observer for animations
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('fade-in');
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.section').forEach(section => {
+                    observer.observe(section);
+                });
+            }
+            
+            setupForms() {
+                document.querySelectorAll('form').forEach(form => {
+                    form.addEventListener('submit', this.handleFormSubmit.bind(this));
+                });
+            }
+            
+            handleFormSubmit(event) {
+                event.preventDefault();
+                const form = event.target;
+                const formData = new FormData(form);
+                
+                this.showLoading();
+                
+                // フォーム送信の処理（実装に応じてカスタマイズ）
+                this.submitForm(form, formData)
+                    .then(response => {
+                        this.showAlert('フォームが正常に送信されました', 'success');
+                    })
+                    .catch(error => {
+                        this.showAlert('送信中にエラーが発生しました', 'error');
+                        console.error('Form submission error:', error);
+                    })
+                    .finally(() => {
+                        this.hideLoading();
+                    });
+            }
+            
+            async submitForm(form, formData) {
+                // フォーム送信のロジック（実装に応じてカスタマイズ）
+                const response = await fetch(form.action || '/submit', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return response.json();
+            }
+            
+            showAlert(message, type = 'info') {
+                const container = document.getElementById('alert-container');
+                if (!container) return;
+                
+                const alert = document.createElement('div');
+                alert.className = `alert alert-${type}`;
+                alert.textContent = message;
+                
+                container.appendChild(alert);
+                
+                // 5秒後に自動削除
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, 5000);
+            }
+            
+            handleResize() {
+                // リサイズ時の処理
+                console.log('ウィンドウがリサイズされました');
+            }
+            
+            handleScroll() {
+                // スクロール時の処理
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // ヘッダーの透明度調整など
+                const header = document.querySelector('.header');
+                if (header) {
+                    if (scrollTop > 100) {
+                        header.style.backgroundColor = 'rgba(var(--primary-color-rgb), 0.95)';
+                    } else {
+                        header.style.backgroundColor = 'var(--primary-color)';
+                    }
+                }
+            }
+            
+            // ユーティリティメソッド
+            createElement(tag, className, content) {
+                const element = document.createElement(tag);
+                if (className) element.className = className;
+                if (content) element.textContent = content;
+                return element;
+            }
+            
+            async fetchData(url, options = {}) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    throw error;
+                }
+            }
+        }
+        
+        // ページマネージャーの初期化
+        const pageManager = new PageManager();
+        
+        // グローバル関数
+        window.showAlert = (message, type) => pageManager.showAlert(message, type);
+        window.showLoading = () => pageManager.showLoading();
+        window.hideLoading = () => pageManager.hideLoading();
+        
+        // カスタムJavaScript
+        {{custom_javascript}}
+    </script>
+    
+    <!-- 外部JavaScriptファイル -->
+    {{#external_scripts}}
+    <script src="{{url}}"></script>
+    {{/external_scripts}}
+    
+    <!-- Google Analytics（必要に応じて） -->
+    {{#google_analytics}}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{tracking_id}}"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '{{tracking_id}}');
+    </script>
+    {{/google_analytics}}
+</body>
+</html>

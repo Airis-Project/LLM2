@@ -1,0 +1,367 @@
+{
+  "_comment": "assets/themes/custom_theme.json - カスタムテーマの設定ファイル",
+  "theme_info": {
+    "name": "Custom Theme",
+    "display_name": "カスタムテーマ",
+    "version": "1.0.0",
+    "author": "LLM Code Assistant",
+    "description": "ユーザーがカスタマイズ可能なテーマ。青とグレーを基調とした現代的なデザイン",
+    "description_ja": "ユーザーがカスタマイズ可能なテーマです。青とグレーを基調とした現代的なデザインで、視認性と美しさを両立しています。"
+  },
+  "colors": {
+    "primary": {
+      "background": "#F5F7FA",
+      "foreground": "#2D3748",
+      "accent": "#3182CE",
+      "accent_hover": "#2C5282",
+      "accent_pressed": "#2A4365"
+    },
+    "secondary": {
+      "background": "#EDF2F7",
+      "foreground": "#4A5568",
+      "border": "#CBD5E0",
+      "hover": "#E2E8F0",
+      "pressed": "#D1D5DB"
+    },
+    "text": {
+      "primary": "#1A202C",
+      "secondary": "#4A5568",
+      "disabled": "#A0AEC0",
+      "link": "#3182CE",
+      "link_hover": "#2C5282",
+      "selection": "#3182CE",
+      "selection_background": "#BEE3F8"
+    },
+    "editor": {
+      "background": "#FFFFFF",
+      "foreground": "#2D3748",
+      "line_number": "#718096",
+      "line_number_background": "#F7FAFC",
+      "current_line": "#F7FAFC",
+      "selection": "#BEE3F8",
+      "cursor": "#2D3748",
+      "bracket_match": "#FED7D7",
+      "bracket_mismatch": "#FEB2B2"
+    },
+    "syntax": {
+      "keyword": "#805AD5",
+      "string": "#38A169",
+      "comment": "#718096",
+      "number": "#D69E2E",
+      "operator": "#2D3748",
+      "function": "#3182CE",
+      "class": "#E53E3E",
+      "variable": "#2B6CB0",
+      "constant": "#805AD5",
+      "type": "#E53E3E",
+      "decorator": "#D69E2E",
+      "builtin": "#805AD5",
+      "error": "#E53E3E",
+      "warning": "#D69E2E"
+    },
+    "ui": {
+      "toolbar": {
+        "background": "#EDF2F7",
+        "foreground": "#2D3748",
+        "border": "#CBD5E0",
+        "button_hover": "#E2E8F0",
+        "button_pressed": "#D1D5DB"
+      },
+      "sidebar": {
+        "background": "#F7FAFC",
+        "foreground": "#2D3748",
+        "border": "#CBD5E0",
+        "item_hover": "#EDF2F7",
+        "item_selected": "#BEE3F8",
+        "item_selected_foreground": "#2C5282"
+      },
+      "statusbar": {
+        "background": "#3182CE",
+        "foreground": "#FFFFFF",
+        "border": "#2C5282"
+      },
+      "menubar": {
+        "background": "#EDF2F7",
+        "foreground": "#2D3748",
+        "border": "#CBD5E0",
+        "item_hover": "#E2E8F0",
+        "item_selected": "#3182CE",
+        "item_selected_foreground": "#FFFFFF"
+      },
+      "dialog": {
+        "background": "#FFFFFF",
+        "foreground": "#2D3748",
+        "border": "#CBD5E0",
+        "title_background": "#EDF2F7",
+        "title_foreground": "#2D3748"
+      },
+      "button": {
+        "background": "#3182CE",
+        "foreground": "#FFFFFF",
+        "border": "#2C5282",
+        "hover_background": "#2C5282",
+        "hover_border": "#2A4365",
+        "pressed_background": "#2A4365",
+        "pressed_border": "#1A365D",
+        "disabled_background": "#EDF2F7",
+        "disabled_foreground": "#A0AEC0"
+      },
+      "input": {
+        "background": "#FFFFFF",
+        "foreground": "#2D3748",
+        "border": "#CBD5E0",
+        "focus_border": "#3182CE",
+        "placeholder": "#718096",
+        "disabled_background": "#F7FAFC",
+        "disabled_foreground": "#A0AEC0"
+      },
+      "tree": {
+        "background": "#FFFFFF",
+        "foreground": "#2D3748",
+        "line": "#E2E8F0",
+        "selection": "#BEE3F8",
+        "selection_foreground": "#2C5282",
+        "hover": "#F7FAFC",
+        "expand_icon": "#4A5568"
+      },
+      "tab": {
+        "background": "#EDF2F7",
+        "foreground": "#4A5568",
+        "active_background": "#FFFFFF",
+        "active_foreground": "#2D3748",
+        "hover_background": "#E2E8F0",
+        "border": "#CBD5E0",
+        "close_button": "#4A5568",
+        "close_button_hover": "#E53E3E"
+      },
+      "scrollbar": {
+        "background": "#F7FAFC",
+        "thumb": "#CBD5E0",
+        "thumb_hover": "#A0AEC0",
+        "thumb_pressed": "#718096",
+        "arrow": "#4A5568",
+        "arrow_hover": "#2D3748"
+      },
+      "tooltip": {
+        "background": "#1A202C",
+        "foreground": "#FFFFFF",
+        "border": "#2D3748"
+      },
+      "notification": {
+        "info_background": "#EBF8FF",
+        "info_foreground": "#2C5282",
+        "info_border": "#90CDF4",
+        "success_background": "#F0FFF4",
+        "success_foreground": "#2F855A",
+        "success_border": "#9AE6B4",
+        "warning_background": "#FFFBEB",
+        "warning_foreground": "#D69E2E",
+        "warning_border": "#F6E05E",
+        "error_background": "#FED7D7",
+        "error_foreground": "#C53030",
+        "error_border": "#FEB2B2"
+      }
+    },
+    "chat": {
+      "background": "#FFFFFF",
+      "user_message_background": "#BEE3F8",
+      "user_message_foreground": "#2D3748",
+      "assistant_message_background": "#F7FAFC",
+      "assistant_message_foreground": "#2D3748",
+      "system_message_background": "#FFFBEB",
+      "system_message_foreground": "#D69E2E",
+      "timestamp": "#718096",
+      "border": "#E2E8F0"
+    },
+    "code_completion": {
+      "background": "#FFFFFF",
+      "foreground": "#2D3748",
+      "selection": "#BEE3F8",
+      "selection_foreground": "#2D3748",
+      "border": "#CBD5E0",
+      "keyword": "#805AD5",
+      "function": "#3182CE",
+      "variable": "#2B6CB0",
+      "type": "#E53E3E"
+    }
+  },
+  "fonts": {
+    "ui": {
+      "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "size": 9,
+      "weight": "normal"
+    },
+    "editor": {
+      "family": "JetBrains Mono, Fira Code, Consolas, 'Courier New', monospace",
+      "size": 10,
+      "weight": "normal",
+      "line_height": 1.5
+    },
+    "code": {
+      "family": "JetBrains Mono, Fira Code, Consolas, 'Courier New', monospace",
+      "size": 9,
+      "weight": "normal"
+    },
+    "title": {
+      "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "size": 14,
+      "weight": "600"
+    },
+    "subtitle": {
+      "family": "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "size": 11,
+      "weight": "500"
+    }
+  },
+  "spacing": {
+    "small": 6,
+    "medium": 12,
+    "large": 18,
+    "extra_large": 24,
+    "padding": {
+      "small": 6,
+      "medium": 12,
+      "large": 18,
+      "extra_large": 24
+    },
+    "margin": {
+      "small": 6,
+      "medium": 12,
+      "large": 18,
+      "extra_large": 24
+    },
+    "border_radius": {
+      "small": 4,
+      "medium": 6,
+      "large": 8,
+      "extra_large": 12
+    }
+  },
+  "borders": {
+    "thin": 1,
+    "medium": 2,
+    "thick": 3,
+    "style": "solid"
+  },
+  "shadows": {
+    "small": "0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06)",
+    "medium": "0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)",
+    "large": "0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05)",
+    "inset": "inset 0 2px 4px rgba(0, 0, 0, 0.06)"
+  },
+  "animations": {
+    "duration": {
+      "fast": 100,
+      "normal": 200,
+      "slow": 300
+    },
+    "easing": {
+      "ease_in": "cubic-bezier(0.4, 0, 1, 1)",
+      "ease_out": "cubic-bezier(0, 0, 0.2, 1)",
+      "ease_in_out": "cubic-bezier(0.4, 0, 0.2, 1)"
+    }
+  },
+  "icons": {
+    "size": {
+      "small": 14,
+      "medium": 18,
+      "large": 22,
+      "extra_large": 28
+    },
+    "color": {
+      "primary": "#2D3748",
+      "secondary": "#4A5568",
+      "disabled": "#A0AEC0",
+      "accent": "#3182CE"
+    }
+  },
+  "editor_settings": {
+    "line_numbers": true,
+    "word_wrap": false,
+    "show_whitespace": false,
+    "show_indent_guides": true,
+    "highlight_current_line": true,
+    "highlight_matching_brackets": true,
+    "fold_code": true,
+    "minimap": true,
+    "ruler_columns": [80, 100, 120],
+    "tab_size": 2,
+    "insert_spaces": true
+  },
+  "ui_settings": {
+    "show_toolbar": true,
+    "show_statusbar": true,
+    "show_sidebar": true,
+    "sidebar_width": 280,
+    "show_minimap": true,
+    "show_line_numbers": true,
+    "word_wrap": false,
+    "auto_save": true,
+    "auto_save_interval": 20,
+    "confirm_exit": true,
+    "remember_window_state": true
+  },
+  "accessibility": {
+    "high_contrast": false,
+    "large_text": false,
+    "screen_reader_support": true,
+    "keyboard_navigation": true,
+    "focus_indicators": true,
+    "reduced_motion": false
+  },
+  "custom_properties": {
+    "window_opacity": 0.98,
+    "blur_background": true,
+    "gradient_backgrounds": true,
+    "rounded_corners": true,
+    "glass_effect": true,
+    "gradient_colors": {
+      "primary": ["#667eea", "#764ba2"],
+      "secondary": ["#f093fb", "#f5576c"],
+      "accent": ["#4facfe", "#00f2fe"]
+    },
+    "glass_opacity": 0.8,
+    "blur_radius": 10
+  },
+  "customization": {
+    "allow_color_override": true,
+    "allow_font_override": true,
+    "allow_spacing_override": true,
+    "allow_animation_override": true,
+    "user_css_support": true,
+    "plugin_theme_support": true
+  },
+  "presets": {
+    "coding_focus": {
+      "description": "コーディングに集中するための設定",
+      "description_ja": "コーディングに集中するための最適化された設定",
+      "settings": {
+        "show_minimap": false,
+        "highlight_current_line": true,
+        "show_indent_guides": true,
+        "word_wrap": false,
+        "tab_size": 4
+      }
+    },
+    "presentation": {
+      "description": "プレゼンテーション用の設定",
+      "description_ja": "プレゼンテーションや画面共有に適した設定",
+      "settings": {
+        "font_size_multiplier": 1.2,
+        "show_line_numbers": false,
+        "show_minimap": false,
+        "high_contrast": true
+      }
+    },
+    "minimal": {
+      "description": "ミニマルな表示設定",
+      "description_ja": "シンプルで集中しやすいミニマルな表示設定",
+      "settings": {
+        "show_toolbar": false,
+        "show_statusbar": false,
+        "sidebar_width": 200,
+        "show_minimap": false
+      }
+    }
+  }
+}

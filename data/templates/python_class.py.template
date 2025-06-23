@@ -1,0 +1,427 @@
+# data/templates/python_class.py.template
+# Pythonクラステンプレート - LLM Code Assistant用
+
+"""
+{{description}}
+
+作成者: {{author}}
+作成日: {{creation_date}}
+バージョン: {{version}}
+"""
+
+import logging
+from typing import Optional, Dict, Any, List, Union
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+import json
+
+# ログ設定
+logger = logging.getLogger(__name__)
+
+
+class {{class_name}}Status(Enum):
+    """{{class_name}}の状態を表す列挙型"""
+    INITIALIZED = "initialized"
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+    ERROR = "error"
+
+
+@dataclass
+class {{class_name}}Config:
+    """{{class_name}}の設定クラス"""
+    name: str = "{{class_name}}"
+    version: str = "1.0.0"
+    enabled: bool = True
+    max_retries: int = 3
+    timeout: float = 30.0
+    debug_mode: bool = False
+    custom_settings: Dict[str, Any] = field(default_factory=dict)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """設定を辞書形式で返す"""
+        return {
+            'name': self.name,
+            'version': self.version,
+            'enabled': self.enabled,
+            'max_retries': self.max_retries,
+            'timeout': self.timeout,
+            'debug_mode': self.debug_mode,
+            'custom_settings': self.custom_settings
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> '{{class_name}}Config':
+        """辞書から設定を作成"""
+        return cls(
+            name=data.get('name', '{{class_name}}'),
+            version=data.get('version', '1.0.0'),
+            enabled=data.get('enabled', True),
+            max_retries=data.get('max_retries', 3),
+            timeout=data.get('timeout', 30.0),
+            debug_mode=data.get('debug_mode', False),
+            custom_settings=data.get('custom_settings', {})
+        )
+
+
+class {{class_name}}Exception(Exception):
+    """{{class_name}}専用例外クラス"""
+    
+    def __init__(self, message: str, error_code: Optional[str] = None, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message)
+        self.error_code = error_code
+        self.details = details or {}
+        
+        # ログに記録
+        logger.error(f"{{class_name}}Exception: {message}, Code: {error_code}, Details: {details}")
+
+
+class {{class_name}}Interface(ABC):
+    """{{class_name}}のインターフェース"""
+    
+    @abstractmethod
+    def initialize(self, config: {{class_name}}Config) -> bool:
+        """初期化処理"""
+        pass
+    
+    @abstractmethod
+    def execute(self, *args, **kwargs) -> Any:
+        """メイン処理の実行"""
+        pass
+    
+    @abstractmethod
+    def cleanup(self) -> bool:
+        """クリーンアップ処理"""
+        pass
+    
+    @abstractmethod
+    def get_status(self) -> {{class_name}}Status:
+        """現在の状態を取得"""
+        pass
+
+
+class {{class_name}}({{class_name}}Interface):
+    """
+    {{description}}
+    
+    主な機能:
+    - {{feature_1}}
+    - {{feature_2}}
+    - {{feature_3}}
+    
+    使用例:
+        config = {{class_name}}Config(name="example", enabled=True)
+        instance = {{class_name}}(config)
+        result = instance.execute(data)
+    """
+    
+    def __init__(self, config: Optional[{{class_name}}Config] = None):
+        """
+        初期化
+        
+        Args:
+            config: 設定オブジェクト
+        """
+        self._config = config or {{class_name}}Config()
+        self._status = {{class_name}}Status.INITIALIZED
+        self._retry_count = 0
+        self._last_error: Optional[Exception] = None
+        self._results: List[Any] = []
+        
+        # ログ設定
+        if self._config.debug_mode:
+            logger.setLevel(logging.DEBUG)
+        
+        logger.info(f"{{class_name}}を初期化しました: {self._config.name}")
+        
+        # 初期化処理
+        if not self.initialize(self._config):
+            raise {{class_name}}Exception("初期化に失敗しました")
+    
+    def initialize(self, config: {{class_name}}Config) -> bool:
+        """
+        初期化処理
+        
+        Args:
+            config: 設定オブジェクト
+            
+        Returns:
+            bool: 初期化成功の場合True
+        """
+        try:
+            logger.debug(f"{{class_name}}の初期化を開始: {config.name}")
+            
+            # 設定の検証
+            if not self._validate_config(config):
+                raise {{class_name}}Exception("設定の検証に失敗しました")
+            
+            # 必要なリソースの初期化
+            self._initialize_resources()
+            
+            self._status = {{class_name}}Status.ACTIVE
+            logger.info(f"{{class_name}}の初期化が完了しました")
+            return True
+            
+        except Exception as e:
+            self._status = {{class_name}}Status.ERROR
+            self._last_error = e
+            logger.error(f"{{class_name}}の初期化中にエラーが発生しました: {e}")
+            return False
+    
+    def execute(self, data: Any = None, **kwargs) -> Any:
+        """
+        メイン処理の実行
+        
+        Args:
+            data: 処理対象のデータ
+            **kwargs: 追加パラメータ
+            
+        Returns:
+            Any: 処理結果
+            
+        Raises:
+            {{class_name}}Exception: 処理中にエラーが発生した場合
+        """
+        if self._status != {{class_name}}Status.ACTIVE:
+            raise {{class_name}}Exception(f"{{class_name}}が無効な状態です: {self._status}")
+        
+        try:
+            logger.debug(f"{{class_name}}の処理を開始")
+            
+            # 前処理
+            processed_data = self._preprocess(data, **kwargs)
+            
+            # メイン処理
+            result = self._process(processed_data, **kwargs)
+            
+            # 後処理
+            final_result = self._postprocess(result, **kwargs)
+            
+            # 結果を記録
+            self._results.append(final_result)
+            
+            logger.info(f"{{class_name}}の処理が完了しました")
+            return final_result
+            
+        except Exception as e:
+            self._handle_error(e)
+            raise {{class_name}}Exception(f"処理中にエラーが発生しました: {e}")
+    
+    def cleanup(self) -> bool:
+        """
+        クリーンアップ処理
+        
+        Returns:
+            bool: クリーンアップ成功の場合True
+        """
+        try:
+            logger.debug("{{class_name}}のクリーンアップを開始")
+            
+            # リソースの解放
+            self._cleanup_resources()
+            
+            # 状態の初期化
+            self._status = {{class_name}}Status.INACTIVE
+            self._retry_count = 0
+            self._last_error = None
+            
+            logger.info("{{class_name}}のクリーンアップが完了しました")
+            return True
+            
+        except Exception as e:
+            logger.error(f"{{class_name}}のクリーンアップ中にエラーが発生しました: {e}")
+            return False
+    
+    def get_status(self) -> {{class_name}}Status:
+        """
+        現在の状態を取得
+        
+        Returns:
+            {{class_name}}Status: 現在の状態
+        """
+        return self._status
+    
+    def get_config(self) -> {{class_name}}Config:
+        """
+        設定を取得
+        
+        Returns:
+            {{class_name}}Config: 現在の設定
+        """
+        return self._config
+    
+    def update_config(self, config: {{class_name}}Config) -> bool:
+        """
+        設定を更新
+        
+        Args:
+            config: 新しい設定
+            
+        Returns:
+            bool: 更新成功の場合True
+        """
+        try:
+            if not self._validate_config(config):
+                return False
+            
+            self._config = config
+            logger.info("{{class_name}}の設定を更新しました")
+            return True
+            
+        except Exception as e:
+            logger.error(f"設定の更新中にエラーが発生しました: {e}")
+            return False
+    
+    def get_results(self) -> List[Any]:
+        """
+        処理結果の履歴を取得
+        
+        Returns:
+            List[Any]: 処理結果のリスト
+        """
+        return self._results.copy()
+    
+    def get_last_error(self) -> Optional[Exception]:
+        """
+        最後に発生したエラーを取得
+        
+        Returns:
+            Optional[Exception]: 最後のエラー
+        """
+        return self._last_error
+    
+    def _validate_config(self, config: {{class_name}}Config) -> bool:
+        """
+        設定の検証
+        
+        Args:
+            config: 検証する設定
+            
+        Returns:
+            bool: 検証成功の場合True
+        """
+        try:
+            # 必須パラメータの検証
+            if not config.name:
+                logger.error("設定名が空です")
+                return False
+            
+            if config.max_retries < 0:
+                logger.error("最大リトライ回数が負の値です")
+                return False
+            
+            if config.timeout <= 0:
+                logger.error("タイムアウト値が無効です")
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"設定の検証中にエラーが発生しました: {e}")
+            return False
+    
+    def _initialize_resources(self) -> None:
+        """リソースの初期化"""
+        # 実装固有の初期化処理をここに記述
+        pass
+    
+    def _cleanup_resources(self) -> None:
+        """リソースのクリーンアップ"""
+        # 実装固有のクリーンアップ処理をここに記述
+        pass
+    
+    def _preprocess(self, data: Any, **kwargs) -> Any:
+        """
+        前処理
+        
+        Args:
+            data: 入力データ
+            **kwargs: 追加パラメータ
+            
+        Returns:
+            Any: 前処理済みデータ
+        """
+        # 前処理の実装をここに記述
+        return data
+    
+    def _process(self, data: Any, **kwargs) -> Any:
+        """
+        メイン処理
+        
+        Args:
+            data: 処理対象データ
+            **kwargs: 追加パラメータ
+            
+        Returns:
+            Any: 処理結果
+        """
+        # メイン処理の実装をここに記述
+        return data
+    
+    def _postprocess(self, result: Any, **kwargs) -> Any:
+        """
+        後処理
+        
+        Args:
+            result: 処理結果
+            **kwargs: 追加パラメータ
+            
+        Returns:
+            Any: 最終結果
+        """
+        # 後処理の実装をここに記述
+        return result
+    
+    def _handle_error(self, error: Exception) -> None:
+        """
+        エラーハンドリング
+        
+        Args:
+            error: 発生したエラー
+        """
+        self._last_error = error
+        self._retry_count += 1
+        
+        if self._retry_count >= self._config.max_retries:
+            self._status = {{class_name}}Status.ERROR
+            logger.error(f"最大リトライ回数に達しました: {self._retry_count}")
+        else:
+            logger.warning(f"エラーが発生しました（リトライ {self._retry_count}/{self._config.max_retries}）: {error}")
+    
+    def __str__(self) -> str:
+        """文字列表現"""
+        return f"{{class_name}}(name={self._config.name}, status={self._status.value})"
+    
+    def __repr__(self) -> str:
+        """詳細文字列表現"""
+        return f"{{class_name}}(config={self._config}, status={self._status})"
+    
+    def __enter__(self):
+        """コンテキストマネージャーの開始"""
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """コンテキストマネージャーの終了"""
+        self.cleanup()
+        return False
+
+
+# 使用例とテスト用のコード
+if __name__ == "__main__":
+    # 基本的な使用例
+    config = {{class_name}}Config(
+        name="テスト{{class_name}}",
+        debug_mode=True
+    )
+    
+    try:
+        with {{class_name}}(config) as instance:
+            result = instance.execute("テストデータ")
+            print(f"処理結果: {result}")
+            print(f"状態: {instance.get_status()}")
+            
+    except {{class_name}}Exception as e:
+        print(f"エラーが発生しました: {e}")
+        print(f"エラーコード: {e.error_code}")
+        print(f"詳細: {e.details}")

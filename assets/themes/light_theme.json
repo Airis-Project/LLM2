@@ -1,0 +1,319 @@
+{
+  "_comment": "assets/themes/light_theme.json - ライトテーマの設定ファイル",
+  "theme_info": {
+    "name": "Light Theme",
+    "display_name": "ライトテーマ",
+    "version": "1.0.0",
+    "author": "LLM Code Assistant",
+    "description": "明るい色調のデフォルトテーマ",
+    "description_ja": "明るい色調のデフォルトテーマです。日中の作業に適しています。"
+  },
+  "colors": {
+    "primary": {
+      "background": "#FFFFFF",
+      "foreground": "#000000",
+      "accent": "#007ACC",
+      "accent_hover": "#005A9E",
+      "accent_pressed": "#004578"
+    },
+    "secondary": {
+      "background": "#F8F8F8",
+      "foreground": "#333333",
+      "border": "#E0E0E0",
+      "hover": "#F0F0F0",
+      "pressed": "#E8E8E8"
+    },
+    "text": {
+      "primary": "#000000",
+      "secondary": "#666666",
+      "disabled": "#CCCCCC",
+      "link": "#007ACC",
+      "link_hover": "#005A9E",
+      "selection": "#0078D4",
+      "selection_background": "#E3F2FD"
+    },
+    "editor": {
+      "background": "#FFFFFF",
+      "foreground": "#000000",
+      "line_number": "#999999",
+      "line_number_background": "#F8F8F8",
+      "current_line": "#F5F5F5",
+      "selection": "#B3D9FF",
+      "cursor": "#000000",
+      "bracket_match": "#FFE082",
+      "bracket_mismatch": "#FFCDD2"
+    },
+    "syntax": {
+      "keyword": "#0000FF",
+      "string": "#008000",
+      "comment": "#808080",
+      "number": "#FF8C00",
+      "operator": "#000000",
+      "function": "#795E26",
+      "class": "#267F99",
+      "variable": "#001080",
+      "constant": "#0070C1",
+      "type": "#267F99",
+      "decorator": "#795E26",
+      "builtin": "#0000FF",
+      "error": "#FF0000",
+      "warning": "#FFA500"
+    },
+    "ui": {
+      "toolbar": {
+        "background": "#F8F8F8",
+        "foreground": "#000000",
+        "border": "#E0E0E0",
+        "button_hover": "#E8E8E8",
+        "button_pressed": "#D8D8D8"
+      },
+      "sidebar": {
+        "background": "#F8F8F8",
+        "foreground": "#000000",
+        "border": "#E0E0E0",
+        "item_hover": "#E8E8E8",
+        "item_selected": "#E3F2FD",
+        "item_selected_foreground": "#0078D4"
+      },
+      "statusbar": {
+        "background": "#007ACC",
+        "foreground": "#FFFFFF",
+        "border": "#005A9E"
+      },
+      "menubar": {
+        "background": "#F8F8F8",
+        "foreground": "#000000",
+        "border": "#E0E0E0",
+        "item_hover": "#E8E8E8",
+        "item_selected": "#007ACC",
+        "item_selected_foreground": "#FFFFFF"
+      },
+      "dialog": {
+        "background": "#FFFFFF",
+        "foreground": "#000000",
+        "border": "#CCCCCC",
+        "title_background": "#F8F8F8",
+        "title_foreground": "#000000"
+      },
+      "button": {
+        "background": "#F0F0F0",
+        "foreground": "#000000",
+        "border": "#CCCCCC",
+        "hover_background": "#E8E8E8",
+        "hover_border": "#999999",
+        "pressed_background": "#D8D8D8",
+        "pressed_border": "#666666",
+        "disabled_background": "#F8F8F8",
+        "disabled_foreground": "#CCCCCC"
+      },
+      "input": {
+        "background": "#FFFFFF",
+        "foreground": "#000000",
+        "border": "#CCCCCC",
+        "focus_border": "#007ACC",
+        "placeholder": "#999999",
+        "disabled_background": "#F8F8F8",
+        "disabled_foreground": "#CCCCCC"
+      },
+      "tree": {
+        "background": "#FFFFFF",
+        "foreground": "#000000",
+        "line": "#E0E0E0",
+        "selection": "#E3F2FD",
+        "selection_foreground": "#0078D4",
+        "hover": "#F0F0F0",
+        "expand_icon": "#666666"
+      },
+      "tab": {
+        "background": "#F8F8F8",
+        "foreground": "#666666",
+        "active_background": "#FFFFFF",
+        "active_foreground": "#000000",
+        "hover_background": "#E8E8E8",
+        "border": "#E0E0E0",
+        "close_button": "#666666",
+        "close_button_hover": "#FF0000"
+      },
+      "scrollbar": {
+        "background": "#F8F8F8",
+        "thumb": "#CCCCCC",
+        "thumb_hover": "#999999",
+        "thumb_pressed": "#666666",
+        "arrow": "#666666",
+        "arrow_hover": "#333333"
+      },
+      "tooltip": {
+        "background": "#FFFFCC",
+        "foreground": "#000000",
+        "border": "#CCCCCC"
+      },
+      "notification": {
+        "info_background": "#E3F2FD",
+        "info_foreground": "#0277BD",
+        "info_border": "#81D4FA",
+        "success_background": "#E8F5E8",
+        "success_foreground": "#2E7D32",
+        "success_border": "#81C784",
+        "warning_background": "#FFF3E0",
+        "warning_foreground": "#F57C00",
+        "warning_border": "#FFB74D",
+        "error_background": "#FFEBEE",
+        "error_foreground": "#C62828",
+        "error_border": "#EF5350"
+      }
+    },
+    "chat": {
+      "background": "#FFFFFF",
+      "user_message_background": "#E3F2FD",
+      "user_message_foreground": "#000000",
+      "assistant_message_background": "#F8F8F8",
+      "assistant_message_foreground": "#000000",
+      "system_message_background": "#FFF3E0",
+      "system_message_foreground": "#E65100",
+      "timestamp": "#999999",
+      "border": "#E0E0E0"
+    },
+    "code_completion": {
+      "background": "#FFFFFF",
+      "foreground": "#000000",
+      "selection": "#E3F2FD",
+      "selection_foreground": "#000000",
+      "border": "#CCCCCC",
+      "keyword": "#0000FF",
+      "function": "#795E26",
+      "variable": "#001080",
+      "type": "#267F99"
+    }
+  },
+  "fonts": {
+    "ui": {
+      "family": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
+      "size": 9,
+      "weight": "normal"
+    },
+    "editor": {
+      "family": "Consolas, 'Courier New', monospace",
+      "size": 10,
+      "weight": "normal",
+      "line_height": 1.4
+    },
+    "code": {
+      "family": "Consolas, 'Courier New', monospace",
+      "size": 9,
+      "weight": "normal"
+    },
+    "title": {
+      "family": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
+      "size": 12,
+      "weight": "bold"
+    },
+    "subtitle": {
+      "family": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
+      "size": 10,
+      "weight": "bold"
+    }
+  },
+  "spacing": {
+    "small": 4,
+    "medium": 8,
+    "large": 16,
+    "extra_large": 24,
+    "padding": {
+      "small": 4,
+      "medium": 8,
+      "large": 12,
+      "extra_large": 16
+    },
+    "margin": {
+      "small": 4,
+      "medium": 8,
+      "large": 16,
+      "extra_large": 24
+    },
+    "border_radius": {
+      "small": 2,
+      "medium": 4,
+      "large": 6,
+      "extra_large": 8
+    }
+  },
+  "borders": {
+    "thin": 1,
+    "medium": 2,
+    "thick": 3,
+    "style": "solid"
+  },
+  "shadows": {
+    "small": "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)",
+    "medium": "0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23)",
+    "large": "0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23)",
+    "inset": "inset 0 1px 3px rgba(0,0,0,0.12)"
+  },
+  "animations": {
+    "duration": {
+      "fast": 150,
+      "normal": 250,
+      "slow": 400
+    },
+    "easing": {
+      "ease_in": "cubic-bezier(0.4, 0, 1, 1)",
+      "ease_out": "cubic-bezier(0, 0, 0.2, 1)",
+      "ease_in_out": "cubic-bezier(0.4, 0, 0.2, 1)"
+    }
+  },
+  "icons": {
+    "size": {
+      "small": 16,
+      "medium": 20,
+      "large": 24,
+      "extra_large": 32
+    },
+    "color": {
+      "primary": "#000000",
+      "secondary": "#666666",
+      "disabled": "#CCCCCC",
+      "accent": "#007ACC"
+    }
+  },
+  "editor_settings": {
+    "line_numbers": true,
+    "word_wrap": false,
+    "show_whitespace": false,
+    "show_indent_guides": true,
+    "highlight_current_line": true,
+    "highlight_matching_brackets": true,
+    "fold_code": true,
+    "minimap": true,
+    "ruler_columns": [80, 120],
+    "tab_size": 4,
+    "insert_spaces": true
+  },
+  "ui_settings": {
+    "show_toolbar": true,
+    "show_statusbar": true,
+    "show_sidebar": true,
+    "sidebar_width": 250,
+    "show_minimap": true,
+    "show_line_numbers": true,
+    "word_wrap": false,
+    "auto_save": true,
+    "auto_save_interval": 30,
+    "confirm_exit": true,
+    "remember_window_state": true
+  },
+  "accessibility": {
+    "high_contrast": false,
+    "large_text": false,
+    "screen_reader_support": true,
+    "keyboard_navigation": true,
+    "focus_indicators": true,
+    "reduced_motion": false
+  },
+  "custom_properties": {
+    "window_opacity": 1.0,
+    "blur_background": false,
+    "gradient_backgrounds": false,
+    "rounded_corners": true,
+    "glass_effect": false
+  }
+}

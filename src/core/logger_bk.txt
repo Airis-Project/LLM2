@@ -1,0 +1,390 @@
+# src/core/logger.py
+"""
+ログ管理モジュール
+アプリケーション全体のログを一元管理し、設定に応じたログ出力を行う
+"""
+
+import os
+import sys
+import logging
+import logging.handlers
+from pathlib import Path
+from typing import Optional, Dict, Any
+from datetime import datetime
+import json
+import yaml
+from dataclasses import dataclass
+import traceback
+
+@dataclass
+class LogConfig:
+    """ログ設定のデータクラス"""
+    level: str = "INFO"
+    format: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    date_format: str = "%Y-%m-%d %H:%M:%S"
+    file_enabled: bool = True
+    console_enabled: bool = True
+    max_file_size: int = 10 * 1024 * 1024  # 10MB
+    backup_count: int = 5
+    log_directory: str = "./logs"
+    encoding: str = "utf-8"
+
+class ColoredFormatter(logging.Formatter):
+    """カラー付きログフォーマッター（コンソール用）"""
+    
+    # ANSIカラーコード
+    COLORS = {
+        'DEBUG': '\033[36m',      # シアン
+        'INFO': '\033[32m',       # 緑
+        'WARNING': '\033[33m',    # 黄
+        'ERROR': '\033[31m',      # 赤
+        'CRITICAL': '\033[35m',   # マゼンタ
+        'RESET': '\033[0m'        # リセット
+    }
+    
+    def format(self, record):
+        """ログレコードをフォーマット"""
+        # カラーコードを追加
+        color = self.COLORS.get(record.levelname, self.COLORS['RESET'])
+        reset = self.COLORS['RESET']
+        
+        # レベル名にカラーを適用
+        record.levelname = f"{color}{record.levelname}{reset}"
+        
+        return super().format(record)
+
+class JSONFormatter(logging.Formatter):
+    """JSON形式のログフォーマッター"""
+    
+    def format(self, record):
+        """ログレコードをJSON形式でフォーマット"""
+        log_entry = {
+            'timestamp': datetime.fromtimestamp(record.created).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        
+        # 例外情報がある場合は追加
+        if record.exc_info:
+            log_entry['exception'] = self.formatException(record.exc_info)
+        
+        # 追加の属性があれば含める
+        for key, value in record.__dict__.items():
+            if key not in ['name', 'msg', 'args', 'levelname', 'levelno', 
+                          'pathname', 'filename', 'module', 'lineno', 
+                          'funcName', 'created', 'msecs', 'relativeCreated', 
+                          'thread', 'threadName', 'processName', 'process',
+                          'exc_info', 'exc_text', 'stack_info']:
+                log_entry[key] = value
+        
+        return json.dumps(log_entry, ensure_ascii=False)
+
+class LogManager:
+    """ログ管理クラス"""
+    
+    def __init__(self, config: Optional[LogConfig] = None):
+        """
+        初期化
+        
+        Args:
+            config: ログ設定
+        """
+        self.config = config or LogConfig()
+        self.loggers: Dict[str, logging.Logger] = {}
+        self._setup_logging()
+    
+    def _setup_logging(self):
+        """ログ設定をセットアップ"""
+        # ログディレクトリを作成
+        log_dir = Path(self.config.log_directory)
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # ルートロガーの設定
+        root_logger = logging.getLogger()
+        root_logger.setLevel(getattr(logging, self.config.level.upper()))
+        
+        # 既存のハンドラーをクリア
+        root_logger.handlers.clear()
+        
+        # コンソールハンドラー
+        if self.config.console_enabled:
+            console_handler = logging.StreamHandler(sys.stdout)
+            console_handler.setLevel(getattr(logging, self.config.level.upper()))
+            
+            # カラー付きフォーマッター
+            console_formatter = ColoredFormatter(
+                fmt=self.config.format,
+                datefmt=self.config.date_format
+            )
+            console_handler.setFormatter(console_formatter)
+            root_logger.addHandler(console_handler)
+        
+        # ファイルハンドラー
+        if self.config.file_enabled:
+            # 通常のログファイル
+            log_file = log_dir / "app.log"
+            file_handler = logging.handlers.RotatingFileHandler(
+                filename=log_file,
+                maxBytes=self.config.max_file_size,
+                backupCount=self.config.backup_count,
+                encoding=self.config.encoding
+            )
+            file_handler.setLevel(getattr(logging, self.config.level.upper()))
+            
+            file_formatter = logging.Formatter(
+                fmt=self.config.format,
+                datefmt=self.config.date_format
+            )
+            file_handler.setFormatter(file_formatter)
+            root_logger.addHandler(file_handler)
+            
+            # エラーログファイル（ERROR以上のみ）
+            error_log_file = log_dir / "error.log"
+            error_handler = logging.handlers.RotatingFileHandler(
+                filename=error_log_file,
+                maxBytes=self.config.max_file_size,
+                backupCount=self.config.backup_count,
+                encoding=self.config.encoding
+            )
+            error_handler.setLevel(logging.ERROR)
+            error_handler.setFormatter(file_formatter)
+            root_logger.addHandler(error_handler)
+            
+            # JSONログファイル（構造化ログ）
+            json_log_file = log_dir / "app.json"
+            json_handler = logging.handlers.RotatingFileHandler(
+                filename=json_log_file,
+                maxBytes=self.config.max_file_size,
+                backupCount=self.config.backup_count,
+                encoding=self.config.encoding
+            )
+            json_handler.setLevel(getattr(logging, self.config.level.upper()))
+            json_handler.setFormatter(JSONFormatter())
+            root_logger.addHandler(json_handler)
+    
+    def get_logger(self, name: str) -> logging.Logger:
+        """
+        指定された名前のロガーを取得
+        
+        Args:
+            name: ロガー名
+            
+        Returns:
+            logging.Logger: ロガーインスタンス
+        """
+        if name not in self.loggers:
+            logger = logging.getLogger(name)
+            self.loggers[name] = logger
+        
+        return self.loggers[name]
+    
+    def set_level(self, level: str):
+        """
+        ログレベルを設定
+        
+        Args:
+            level: ログレベル（DEBUG, INFO, WARNING, ERROR, CRITICAL）
+        """
+        self.config.level = level.upper()
+        log_level = getattr(logging, self.config.level)
+        
+        # 全てのハンドラーのレベルを更新
+        root_logger = logging.getLogger()
+        root_logger.setLevel(log_level)
+        
+        for handler in root_logger.handlers:
+            if not isinstance(handler, logging.handlers.RotatingFileHandler) or \
+               "error.log" not in str(handler.baseFilename):
+                handler.setLevel(log_level)
+    
+    def add_file_handler(self, filename: str, level: str = "INFO", 
+                        formatter: Optional[logging.Formatter] = None):
+        """
+        新しいファイルハンドラーを追加
+        
+        Args:
+            filename: ログファイル名
+            level: ログレベル
+            formatter: フォーマッター
+        """
+        log_file = Path(self.config.log_directory) / filename
+        
+        handler = logging.handlers.RotatingFileHandler(
+            filename=log_file,
+            maxBytes=self.config.max_file_size,
+            backupCount=self.config.backup_count,
+            encoding=self.config.encoding
+        )
+        handler.setLevel(getattr(logging, level.upper()))
+        
+        if formatter is None:
+            formatter = logging.Formatter(
+                fmt=self.config.format,
+                datefmt=self.config.date_format
+            )
+        handler.setFormatter(formatter)
+        
+        logging.getLogger().addHandler(handler)
+    
+    def log_exception(self, logger: logging.Logger, message: str = "例外が発生しました"):
+        """
+        例外情報をログに記録
+        
+        Args:
+            logger: ロガー
+            message: メッセージ
+        """
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+        if exc_type is not None:
+            logger.error(
+                f"{message}\n"
+                f"例外タイプ: {exc_type.__name__}\n"
+                f"例外メッセージ: {str(exc_value)}\n"
+                f"トレースバック:\n{traceback.format_exc()}"
+            )
+    
+    def load_config_from_file(self, config_file: str):
+        """
+        設定ファイルからログ設定を読み込み
+        
+        Args:
+            config_file: 設定ファイルパス
+        """
+        try:
+            config_path = Path(config_file)
+            if not config_path.exists():
+                return
+            
+            if config_path.suffix.lower() == '.yaml' or config_path.suffix.lower() == '.yml':
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config_data = yaml.safe_load(f)
+            else:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config_data = json.load(f)
+            
+            # 設定を更新
+            logging_config = config_data.get('logging', {})
+            for key, value in logging_config.items():
+                if hasattr(self.config, key):
+                    setattr(self.config, key, value)
+            
+            # ログ設定を再セットアップ
+            self._setup_logging()
+            
+        except Exception as e:
+            logging.getLogger(__name__).error(f"ログ設定ファイルの読み込みに失敗: {e}")
+    
+    def get_log_stats(self) -> Dict[str, Any]:
+        """
+        ログ統計情報を取得
+        
+        Returns:
+            Dict[str, Any]: ログ統計情報
+        """
+        log_dir = Path(self.config.log_directory)
+        stats = {
+            'log_directory': str(log_dir),
+            'total_log_files': 0,
+            'total_size_mb': 0,
+            'files': []
+        }
+        
+        if log_dir.exists():
+            for log_file in log_dir.glob("*.log*"):
+                if log_file.is_file():
+                    size_mb = log_file.stat().st_size / (1024 * 1024)
+                    stats['files'].append({
+                        'name': log_file.name,
+                        'size_mb': round(size_mb, 2),
+                        'modified': datetime.fromtimestamp(
+                            log_file.stat().st_mtime
+                        ).isoformat()
+                    })
+                    stats['total_size_mb'] += size_mb
+            
+            stats['total_log_files'] = len(stats['files'])
+            stats['total_size_mb'] = round(stats['total_size_mb'], 2)
+        
+        return stats
+    
+    def cleanup_old_logs(self, days: int = 30):
+        """
+        古いログファイルをクリーンアップ
+        
+        Args:
+            days: 保持する日数
+        """
+        log_dir = Path(self.config.log_directory)
+        if not log_dir.exists():
+            return
+        
+        cutoff_time = datetime.now().timestamp() - (days * 24 * 60 * 60)
+        removed_files = []
+        
+        for log_file in log_dir.glob("*.log*"):
+            if log_file.is_file() and log_file.stat().st_mtime < cutoff_time:
+                try:
+                    log_file.unlink()
+                    removed_files.append(log_file.name)
+                except Exception as e:
+                    logging.getLogger(__name__).error(
+                        f"ログファイルの削除に失敗: {log_file.name}, エラー: {e}"
+                    )
+        
+        if removed_files:
+            logging.getLogger(__name__).info(
+                f"古いログファイルを削除しました: {', '.join(removed_files)}"
+            )
+
+# グローバルログマネージャーインスタンス
+_log_manager: Optional[LogManager] = None
+
+def setup_logging(config: Optional[LogConfig] = None, config_file: Optional[str] = None):
+    """
+    ログシステムをセットアップ
+    
+    Args:
+        config: ログ設定
+        config_file: 設定ファイルパス
+    """
+    global _log_manager
+    _log_manager = LogManager(config)
+    
+    if config_file:
+        _log_manager.load_config_from_file(config_file)
+
+def get_logger(name: str) -> logging.Logger:
+    """
+    ロガーを取得
+    
+    Args:
+        name: ロガー名
+        
+    Returns:
+        logging.Logger: ロガーインスタンス
+    """
+    if _log_manager is None:
+        setup_logging()
+    
+    return _log_manager.get_logger(name)
+
+def log_exception(message: str = "例外が発生しました", logger_name: str = __name__):
+    """
+    例外をログに記録
+    
+    Args:
+        message: メッセージ
+        logger_name: ロガー名
+    """
+    if _log_manager is None:
+        setup_logging()
+    
+    logger = _log_manager.get_logger(logger_name)
+    _log_manager.log_exception(logger, message)
+
+# モジュールレベルでのロガー初期化
+logger = get_logger(__name__)

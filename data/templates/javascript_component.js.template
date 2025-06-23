@@ -1,0 +1,746 @@
+// data/templates/javascript_component.js.template
+// JavaScriptコンポーネントテンプレート - LLM Code Assistant用
+
+/**
+ * {{description}}
+ * 
+ * 作成者: {{author}}
+ * 作成日: {{creation_date}}
+ * バージョン: {{version}}
+ */
+
+'use strict';
+
+// 依存関係のインポート
+{{imports}}
+
+/**
+ * {{component_name}}の状態を表す列挙型
+ */
+const {{component_name}}State = Object.freeze({
+    INITIALIZED: 'initialized',
+    LOADING: 'loading',
+    READY: 'ready',
+    ERROR: 'error',
+    DESTROYED: 'destroyed'
+});
+
+/**
+ * {{component_name}}のイベントタイプ
+ */
+const {{component_name}}Events = Object.freeze({
+    INITIALIZED: '{{component_name}}.initialized',
+    STATE_CHANGED: '{{component_name}}.stateChanged',
+    DATA_LOADED: '{{component_name}}.dataLoaded',
+    ERROR_OCCURRED: '{{component_name}}.errorOccurred',
+    DESTROYED: '{{component_name}}.destroyed'
+});
+
+/**
+ * {{component_name}}の設定オブジェクト
+ */
+class {{component_name}}Config {
+    constructor(options = {}) {
+        // デフォルト設定
+        this.name = options.name || '{{component_name}}';
+        this.version = options.version || '1.0.0';
+        this.debug = options.debug || false;
+        this.autoInit = options.autoInit !== false;
+        this.timeout = options.timeout || 30000;
+        this.retryCount = options.retryCount || 3;
+        this.retryDelay = options.retryDelay || 1000;
+        this.enableEvents = options.enableEvents !== false;
+        this.customSettings = options.customSettings || {};
+        
+        // 設定の検証
+        this._validateConfig();
+    }
+    
+    /**
+     * 設定の検証
+     * @private
+     */
+    _validateConfig() {
+        if (!this.name || typeof this.name !== 'string') {
+            throw new Error('設定名は必須で文字列である必要があります');
+        }
+        
+        if (this.timeout <= 0) {
+            throw new Error('タイムアウト値は正の数である必要があります');
+        }
+        
+        if (this.retryCount < 0) {
+            throw new Error('リトライ回数は0以上である必要があります');
+        }
+    }
+    
+    /**
+     * 設定を辞書形式で取得
+     * @returns {Object} 設定オブジェクト
+     */
+    toObject() {
+        return {
+            name: this.name,
+            version: this.version,
+            debug: this.debug,
+            autoInit: this.autoInit,
+            timeout: this.timeout,
+            retryCount: this.retryCount,
+            retryDelay: this.retryDelay,
+            enableEvents: this.enableEvents,
+            customSettings: { ...this.customSettings }
+        };
+    }
+}
+
+/**
+ * {{component_name}}のエラークラス
+ */
+class {{component_name}}Error extends Error {
+    constructor(message, code = null, details = null) {
+        super(message);
+        this.name = '{{component_name}}Error';
+        this.code = code;
+        this.details = details || {};
+        this.timestamp = new Date().toISOString();
+        
+        // スタックトレースの保持
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, {{component_name}}Error);
+        }
+    }
+    
+    /**
+     * エラー情報を辞書形式で取得
+     * @returns {Object} エラー情報
+     */
+    toObject() {
+        return {
+            name: this.name,
+            message: this.message,
+            code: this.code,
+            details: this.details,
+            timestamp: this.timestamp,
+            stack: this.stack
+        };
+    }
+}
+
+/**
+ * {{component_name}}のイベントエミッタ
+ */
+class {{component_name}}EventEmitter {
+    constructor() {
+        this._events = new Map();
+        this._maxListeners = 10;
+    }
+    
+    /**
+     * イベントリスナーを追加
+     * @param {string} eventName - イベント名
+     * @param {Function} listener - リスナー関数
+     * @returns {{{component_name}}EventEmitter} this
+     */
+    on(eventName, listener) {
+        if (typeof listener !== 'function') {
+            throw new TypeError('リスナーは関数である必要があります');
+        }
+        
+        if (!this._events.has(eventName)) {
+            this._events.set(eventName, []);
+        }
+        
+        const listeners = this._events.get(eventName);
+        if (listeners.length >= this._maxListeners) {
+            console.warn(`イベント "${eventName}" のリスナー数が上限（${this._maxListeners}）に達しています`);
+        }
+        
+        listeners.push(listener);
+        return this;
+    }
+    
+    /**
+     * 一度だけ実行されるイベントリスナーを追加
+     * @param {string} eventName - イベント名
+     * @param {Function} listener - リスナー関数
+     * @returns {{{component_name}}EventEmitter} this
+     */
+    once(eventName, listener) {
+        const onceWrapper = (...args) => {
+            this.off(eventName, onceWrapper);
+            listener.apply(this, args);
+        };
+        
+        return this.on(eventName, onceWrapper);
+    }
+    
+    /**
+     * イベントリスナーを削除
+     * @param {string} eventName - イベント名
+     * @param {Function} listener - リスナー関数
+     * @returns {{{component_name}}EventEmitter} this
+     */
+    off(eventName, listener) {
+        if (!this._events.has(eventName)) {
+            return this;
+        }
+        
+        const listeners = this._events.get(eventName);
+        const index = listeners.indexOf(listener);
+        
+        if (index !== -1) {
+            listeners.splice(index, 1);
+            
+            if (listeners.length === 0) {
+                this._events.delete(eventName);
+            }
+        }
+        
+        return this;
+    }
+    
+    /**
+     * イベントを発火
+     * @param {string} eventName - イベント名
+     * @param {...any} args - イベント引数
+     * @returns {boolean} リスナーが存在したかどうか
+     */
+    emit(eventName, ...args) {
+        if (!this._events.has(eventName)) {
+            return false;
+        }
+        
+        const listeners = this._events.get(eventName).slice();
+        
+        for (const listener of listeners) {
+            try {
+                listener.apply(this, args);
+            } catch (error) {
+                console.error(`イベントリスナーでエラーが発生しました: ${error.message}`, error);
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * すべてのイベントリスナーを削除
+     */
+    removeAllListeners() {
+        this._events.clear();
+    }
+}
+
+/**
+ * {{component_name}}のメインクラス
+ * 
+ * 主な機能:
+ * - {{feature_1}}
+ * - {{feature_2}}
+ * - {{feature_3}}
+ * 
+ * 使用例:
+ * const config = new {{component_name}}Config({ debug: true });
+ * const component = new {{component_name}}(config);
+ * await component.initialize();
+ */
+class {{component_name}} extends {{component_name}}EventEmitter {
+    /**
+     * コンストラクタ
+     * @param {{{component_name}}Config|Object} config - 設定オブジェクト
+     */
+    constructor(config = {}) {
+        super();
+        
+        // 設定の初期化
+        this._config = config instanceof {{component_name}}Config ? config : new {{component_name}}Config(config);
+        
+        // 状態の初期化
+        this._state = {{component_name}}State.INITIALIZED;
+        this._data = null;
+        this._error = null;
+        this._retryCount = 0;
+        this._timers = new Map();
+        this._abortController = null;
+        
+        // ログ機能の初期化
+        this._logger = this._createLogger();
+        
+        this._logger.info(`{{component_name}}を初期化しました: ${this._config.name}`);
+        
+        // イベントの有効化
+        if (this._config.enableEvents) {
+            this._setupEventHandlers();
+        }
+        
+        // 自動初期化
+        if (this._config.autoInit) {
+            this.initialize().catch(error => {
+                this._logger.error('自動初期化に失敗しました:', error);
+            });
+        }
+        
+        // 初期化完了イベントの発火
+        this.emit({{component_name}}Events.INITIALIZED, this);
+    }
+    
+    /**
+     * 初期化処理
+     * @returns {Promise<boolean>} 初期化成功の場合true
+     */
+    async initialize() {
+        try {
+            this._logger.debug('{{component_name}}の初期化を開始');
+            
+            // 状態の更新
+            this._setState({{component_name}}State.LOADING);
+            
+            // 必要なリソースの初期化
+            await this._initializeResources();
+            
+            // データの読み込み
+            await this._loadData();
+            
+            // 状態の更新
+            this._setState({{component_name}}State.READY);
+            
+            this._logger.info('{{component_name}}の初期化が完了しました');
+            return true;
+            
+        } catch (error) {
+            this._handleError(error, 'INIT_ERROR');
+            return false;
+        }
+    }
+    
+    /**
+     * メイン処理の実行
+     * @param {any} data - 処理対象のデータ
+     * @param {Object} options - オプション
+     * @returns {Promise<any>} 処理結果
+     */
+    async execute(data = null, options = {}) {
+        if (this._state !== {{component_name}}State.READY) {
+            throw new {{component_name}}Error(
+                `{{component_name}}が無効な状態です: ${this._state}`,
+                'INVALID_STATE'
+            );
+        }
+        
+        try {
+            this._logger.debug('{{component_name}}の処理を開始');
+            
+            // AbortControllerの設定
+            this._abortController = new AbortController();
+            
+            // タイムアウトの設定
+            const timeoutId = setTimeout(() => {
+                this._abortController.abort();
+            }, options.timeout || this._config.timeout);
+            
+            // 前処理
+            const processedData = await this._preprocess(data, options);
+            
+            // メイン処理
+            const result = await this._process(processedData, options);
+            
+            // 後処理
+            const finalResult = await this._postprocess(result, options);
+            
+            // タイムアウトのクリア
+            clearTimeout(timeoutId);
+            
+            this._logger.info('{{component_name}}の処理が完了しました');
+            return finalResult;
+            
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                throw new {{component_name}}Error('処理がタイムアウトしました', 'TIMEOUT');
+            }
+            
+            this._handleError(error, 'EXECUTION_ERROR');
+            throw error;
+        } finally {
+            this._abortController = null;
+        }
+    }
+    
+    /**
+     * クリーンアップ処理
+     * @returns {Promise<boolean>} クリーンアップ成功の場合true
+     */
+    async cleanup() {
+        try {
+            this._logger.debug('{{component_name}}のクリーンアップを開始');
+            
+            // 進行中の処理を中止
+            if (this._abortController) {
+                this._abortController.abort();
+            }
+            
+            // タイマーのクリア
+            this._clearAllTimers();
+            
+            // リソースの解放
+            await this._cleanupResources();
+            
+            // 状態の更新
+            this._setState({{component_name}}State.DESTROYED);
+            
+            // イベントリスナーの削除
+            this.removeAllListeners();
+            
+            this._logger.info('{{component_name}}のクリーンアップが完了しました');
+            
+            // 破棄イベントの発火
+            this.emit({{component_name}}Events.DESTROYED, this);
+            
+            return true;
+            
+        } catch (error) {
+            this._logger.error('クリーンアップ中にエラーが発生しました:', error);
+            return false;
+        }
+    }
+    
+    /**
+     * 現在の状態を取得
+     * @returns {string} 現在の状態
+     */
+    getState() {
+        return this._state;
+    }
+    
+    /**
+     * 設定を取得
+     * @returns {{{component_name}}Config} 現在の設定
+     */
+    getConfig() {
+        return this._config;
+    }
+    
+    /**
+     * データを取得
+     * @returns {any} 現在のデータ
+     */
+    getData() {
+        return this._data;
+    }
+    
+    /**
+     * 最後のエラーを取得
+     * @returns {Error|null} 最後のエラー
+     */
+    getLastError() {
+        return this._error;
+    }
+    
+    /**
+     * 状態の更新
+     * @param {string} newState - 新しい状態
+     * @private
+     */
+    _setState(newState) {
+        const oldState = this._state;
+        this._state = newState;
+        
+        this._logger.debug(`状態が変更されました: ${oldState} -> ${newState}`);
+        
+        // 状態変更イベントの発火
+        this.emit({{component_name}}Events.STATE_CHANGED, {
+            oldState,
+            newState,
+            component: this
+        });
+    }
+    
+    /**
+     * エラーハンドリング
+     * @param {Error} error - エラーオブジェクト
+     * @param {string} code - エラーコード
+     * @private
+     */
+    _handleError(error, code = 'UNKNOWN_ERROR') {
+        this._error = error;
+        this._setState({{component_name}}State.ERROR);
+        
+        this._logger.error(`エラーが発生しました [${code}]:`, error);
+        
+        // エラーイベントの発火
+        this.emit({{component_name}}Events.ERROR_OCCURRED, {
+            error,
+            code,
+            component: this
+        });
+    }
+    
+    /**
+     * ログ機能の作成
+     * @returns {Object} ログオブジェクト
+     * @private
+     */
+    _createLogger() {
+        const prefix = `[${this._config.name}]`;
+        
+        return {
+            debug: (...args) => {
+                if (this._config.debug) {
+                    console.debug(prefix, ...args);
+                }
+            },
+            info: (...args) => console.info(prefix, ...args),
+            warn: (...args) => console.warn(prefix, ...args),
+            error: (...args) => console.error(prefix, ...args)
+        };
+    }
+    
+    /**
+     * イベントハンドラーの設定
+     * @private
+     */
+    _setupEventHandlers() {
+        // 必要に応じてイベントハンドラーを設定
+    }
+    
+    /**
+     * リソースの初期化
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _initializeResources() {
+        // 実装固有の初期化処理をここに記述
+        await this._delay(100); // 初期化の模擬
+    }
+    
+    /**
+     * データの読み込み
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _loadData() {
+        // 実装固有のデータ読み込み処理をここに記述
+        this._data = {{default_data}};
+        
+        // データ読み込み完了イベントの発火
+        this.emit({{component_name}}Events.DATA_LOADED, {
+            data: this._data,
+            component: this
+        });
+    }
+    
+    /**
+     * 前処理
+     * @param {any} data - 入力データ
+     * @param {Object} options - オプション
+     * @returns {Promise<any>} 前処理済みデータ
+     * @private
+     */
+    async _preprocess(data, options) {
+        // 前処理の実装をここに記述
+        return data;
+    }
+    
+    /**
+     * メイン処理
+     * @param {any} data - 処理対象データ
+     * @param {Object} options - オプション
+     * @returns {Promise<any>} 処理結果
+     * @private
+     */
+    async _process(data, options) {
+        // メイン処理の実装をここに記述
+        return data;
+    }
+    
+    /**
+     * 後処理
+     * @param {any} result - 処理結果
+     * @param {Object} options - オプション
+     * @returns {Promise<any>} 最終結果
+     * @private
+     */
+    async _postprocess(result, options) {
+        // 後処理の実装をここに記述
+        return result;
+    }
+    
+    /**
+     * リソースのクリーンアップ
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _cleanupResources() {
+        // 実装固有のクリーンアップ処理をここに記述
+    }
+    
+    /**
+     * 遅延処理
+     * @param {number} ms - 遅延時間（ミリ秒）
+     * @returns {Promise<void>}
+     * @private
+     */
+    _delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    /**
+     * すべてのタイマーをクリア
+     * @private
+     */
+    _clearAllTimers() {
+        for (const [name, timerId] of this._timers) {
+            clearTimeout(timerId);
+            this._logger.debug(`タイマー "${name}" をクリアしました`);
+        }
+        this._timers.clear();
+    }
+}
+
+// ユーティリティ関数群
+
+/**
+ * {{component_name}}のファクトリー関数
+ * @param {Object} config - 設定オブジェクト
+ * @returns {{{component_name}}} コンポーネントインスタンス
+ */
+function create{{component_name}}(config = {}) {
+    return new {{component_name}}(config);
+}
+
+/**
+ * 複数の{{component_name}}を管理するマネージャークラス
+ */
+class {{component_name}}Manager {
+    constructor() {
+        this._components = new Map();
+        this._logger = {
+            info: (...args) => console.info('[{{component_name}}Manager]', ...args),
+            warn: (...args) => console.warn('[{{component_name}}Manager]', ...args),
+            error: (...args) => console.error('[{{component_name}}Manager]', ...args)
+        };
+    }
+    
+    /**
+     * コンポーネントを追加
+     * @param {string} name - コンポーネント名
+     * @param {{{component_name}}} component - コンポーネントインスタンス
+     */
+    add(name, component) {
+        if (this._components.has(name)) {
+            this._logger.warn(`コンポーネント "${name}" は既に存在します`);
+            return;
+        }
+        
+        this._components.set(name, component);
+        this._logger.info(`コンポーネント "${name}" を追加しました`);
+    }
+    
+    /**
+     * コンポーネントを取得
+     * @param {string} name - コンポーネント名
+     * @returns {{{component_name}}|null} コンポーネントインスタンス
+     */
+    get(name) {
+        return this._components.get(name) || null;
+    }
+    
+    /**
+     * コンポーネントを削除
+     * @param {string} name - コンポーネント名
+     * @returns {Promise<boolean>} 削除成功の場合true
+     */
+    async remove(name) {
+        const component = this._components.get(name);
+        if (!component) {
+            return false;
+        }
+        
+        try {
+            await component.cleanup();
+            this._components.delete(name);
+            this._logger.info(`コンポーネント "${name}" を削除しました`);
+            return true;
+        } catch (error) {
+            this._logger.error(`コンポーネント "${name}" の削除に失敗しました:`, error);
+            return false;
+        }
+    }
+    
+    /**
+     * すべてのコンポーネントをクリーンアップ
+     * @returns {Promise<void>}
+     */
+    async cleanup() {
+        const promises = Array.from(this._components.entries()).map(
+            async ([name, component]) => {
+                try {
+                    await component.cleanup();
+                    this._logger.info(`コンポーネント "${name}" をクリーンアップしました`);
+                } catch (error) {
+                    this._logger.error(`コンポーネント "${name}" のクリーンアップに失敗しました:`, error);
+                }
+            }
+        );
+        
+        await Promise.all(promises);
+        this._components.clear();
+    }
+}
+
+// エクスポート
+if (typeof module !== 'undefined' && module.exports) {
+    // Node.js環境
+    module.exports = {
+        {{component_name}},
+        {{component_name}}Config,
+        {{component_name}}Error,
+        {{component_name}}State,
+        {{component_name}}Events,
+        {{component_name}}Manager,
+        create{{component_name}}
+    };
+} else if (typeof window !== 'undefined') {
+    // ブラウザ環境
+    window.{{component_name}} = {{component_name}};
+    window.{{component_name}}Config = {{component_name}}Config;
+    window.{{component_name}}Error = {{component_name}}Error;
+    window.{{component_name}}State = {{component_name}}State;
+    window.{{component_name}}Events = {{component_name}}Events;
+    window.{{component_name}}Manager = {{component_name}}Manager;
+    window.create{{component_name}} = create{{component_name}};
+}
+
+// 使用例とテスト用のコード
+if (typeof window !== 'undefined' && window.location.search.includes('test=true')) {
+    // ブラウザでのテスト実行
+    (async () => {
+        try {
+            const config = new {{component_name}}Config({
+                name: 'テスト{{component_name}}',
+                debug: true
+            });
+            
+            const component = new {{component_name}}(config);
+            
+            // イベントリスナーの設定
+            component.on({{component_name}}Events.STATE_CHANGED, (event) => {
+                console.log('状態変更:', event);
+            });
+            
+            component.on({{component_name}}Events.DATA_LOADED, (event) => {
+                console.log('データ読み込み完了:', event);
+            });
+            
+            // 初期化と実行
+            await component.initialize();
+            const result = await component.execute('テストデータ');
+            console.log('実行結果:', result);
+            
+            // クリーンアップ
+            await component.cleanup();
+            
+        } catch (error) {
+            console.error('テスト実行中にエラーが発生しました:', error);
+        }
+    })();
+}

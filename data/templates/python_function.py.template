@@ -1,0 +1,448 @@
+# data/templates/python_function.py.template
+# Python関数テンプレート - LLM Code Assistant用
+
+"""
+{{description}}
+
+作成者: {{author}}
+作成日: {{creation_date}}
+バージョン: {{version}}
+"""
+
+import logging
+from typing import Optional, Dict, Any, List, Union, Callable, Tuple
+from functools import wraps
+import time
+import traceback
+from dataclasses import dataclass
+from enum import Enum
+
+# ログ設定
+logger = logging.getLogger(__name__)
+
+
+class FunctionStatus(Enum):
+    """関数実行状態を表す列挙型"""
+    SUCCESS = "success"
+    ERROR = "error"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
+
+
+@dataclass
+class FunctionResult:
+    """関数実行結果を格納するクラス"""
+    status: FunctionStatus
+    result: Any = None
+    error: Optional[Exception] = None
+    execution_time: float = 0.0
+    metadata: Dict[str, Any] = None
+    
+    def __post_init__(self):
+        if self.metadata is None:
+            self.metadata = {}
+    
+    def is_success(self) -> bool:
+        """実行が成功したかを判定"""
+        return self.status == FunctionStatus.SUCCESS
+    
+    def get_error_message(self) -> str:
+        """エラーメッセージを取得"""
+        if self.error:
+            return str(self.error)
+        return ""
+
+
+def retry_on_failure(max_retries: int = 3, delay: float = 1.0, backoff: float = 2.0):
+    """
+    失敗時にリトライを行うデコレータ
+    
+    Args:
+        max_retries: 最大リトライ回数
+        delay: 初回リトライまでの遅延時間（秒）
+        backoff: 遅延時間の倍率
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            last_exception = None
+            current_delay = delay
+            
+            for attempt in range(max_retries + 1):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries:
+                        logger.warning(f"関数 {func.__name__} の実行に失敗（試行 {attempt + 1}/{max_retries + 1}）: {e}")
+                        time.sleep(current_delay)
+                        current_delay *= backoff
+                    else:
+                        logger.error(f"関数 {func.__name__} の実行が最大リトライ回数後も失敗: {e}")
+            
+            raise last_exception
+        return wrapper
+    return decorator
+
+
+def measure_execution_time(func: Callable) -> Callable:
+    """
+    関数の実行時間を測定するデコレータ
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+            execution_time = time.time() - start_time
+            logger.debug(f"関数 {func.__name__} の実行時間: {execution_time:.4f}秒")
+            return result
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(f"関数 {func.__name__} がエラーで終了（実行時間: {execution_time:.4f}秒）: {e}")
+            raise
+    return wrapper
+
+
+def validate_input(**validators):
+    """
+    入力値を検証するデコレータ
+    
+    Args:
+        **validators: パラメータ名と検証関数のマッピング
+    """
+    def decorator(func: Callable) -> Callable:
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # 関数のシグネチャを取得
+            import inspect
+            sig = inspect.signature(func)
+            bound_args = sig.bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            
+            # 各パラメータを検証
+            for param_name, validator in validators.items():
+                if param_name in bound_args.arguments:
+                    value = bound_args.arguments[param_name]
+                    if not validator(value):
+                        raise ValueError(f"パラメータ '{param_name}' の値が無効です: {value}")
+            
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+
+
+def safe_execute(func: Callable, *args, timeout: Optional[float] = None, **kwargs) -> FunctionResult:
+    """
+    関数を安全に実行し、結果をFunctionResultで返す
+    
+    Args:
+        func: 実行する関数
+        *args: 関数の位置引数
+        timeout: タイムアウト時間（秒）
+        **kwargs: 関数のキーワード引数
+        
+    Returns:
+        FunctionResult: 実行結果
+    """
+    start_time = time.time()
+    
+    try:
+        logger.debug(f"関数 {func.__name__} の実行を開始")
+        
+        if timeout:
+            import signal
+            
+            def timeout_handler(signum, frame):
+                raise TimeoutError(f"関数 {func.__name__} がタイムアウトしました（{timeout}秒）")
+            
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(int(timeout))
+        
+        result = func(*args, **kwargs)
+        execution_time = time.time() - start_time
+        
+        if timeout:
+            signal.alarm(0)  # タイマーをリセット
+        
+        logger.info(f"関数 {func.__name__} の実行が成功（実行時間: {execution_time:.4f}秒）")
+        
+        return FunctionResult(
+            status=FunctionStatus.SUCCESS,
+            result=result,
+            execution_time=execution_time,
+            metadata={'function_name': func.__name__}
+        )
+        
+    except TimeoutError as e:
+        execution_time = time.time() - start_time
+        logger.error(f"関数 {func.__name__} がタイムアウトしました: {e}")
+        
+        return FunctionResult(
+            status=FunctionStatus.TIMEOUT,
+            error=e,
+            execution_time=execution_time,
+            metadata={'function_name': func.__name__, 'timeout': timeout}
+        )
+        
+    except Exception as e:
+        execution_time = time.time() - start_time
+        logger.error(f"関数 {func.__name__} の実行中にエラーが発生しました: {e}")
+        logger.debug(f"スタックトレース:\n{traceback.format_exc()}")
+        
+        return FunctionResult(
+            status=FunctionStatus.ERROR,
+            error=e,
+            execution_time=execution_time,
+            metadata={'function_name': func.__name__, 'traceback': traceback.format_exc()}
+        )
+
+
+@measure_execution_time
+@retry_on_failure(max_retries=2, delay=0.5)
+def {{function_name}}(
+    {{parameters}}
+) -> {{return_type}}:
+    """
+    {{description}}
+    
+    Args:
+        {{parameter_docs}}
+        
+    Returns:
+        {{return_type}}: {{return_description}}
+        
+    Raises:
+        ValueError: {{error_conditions}}
+        RuntimeError: {{runtime_error_conditions}}
+        
+    Examples:
+        >>> result = {{function_name}}({{example_args}})
+        >>> print(result)
+        {{example_output}}
+    """
+    logger.debug(f"{{function_name}}の実行を開始")
+    
+    try:
+        # 入力値の検証
+        if not _validate_{{function_name}}_input({{validation_args}}):
+            raise ValueError("入力パラメータが無効です")
+        
+        # 前処理
+        processed_data = _preprocess_{{function_name}}_data({{preprocess_args}})
+        
+        # メイン処理
+        result = _execute_{{function_name}}_logic(processed_data)
+        
+        # 後処理
+        final_result = _postprocess_{{function_name}}_result(result)
+        
+        # 結果の検証
+        if not _validate_{{function_name}}_output(final_result):
+            raise RuntimeError("出力結果が無効です")
+        
+        logger.info(f"{{function_name}}の実行が完了しました")
+        return final_result
+        
+    except Exception as e:
+        logger.error(f"{{function_name}}の実行中にエラーが発生しました: {e}")
+        raise
+
+
+def _validate_{{function_name}}_input({{validation_parameters}}) -> bool:
+    """
+    {{function_name}}の入力値を検証
+    
+    Args:
+        {{validation_parameter_docs}}
+        
+    Returns:
+        bool: 検証成功の場合True
+    """
+    try:
+        # 入力値の検証ロジックを実装
+        {{validation_logic}}
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"入力値の検証に失敗しました: {e}")
+        return False
+
+
+def _preprocess_{{function_name}}_data({{preprocess_parameters}}) -> Any:
+    """
+    {{function_name}}のデータ前処理
+    
+    Args:
+        {{preprocess_parameter_docs}}
+        
+    Returns:
+        Any: 前処理済みデータ
+    """
+    try:
+        # データの前処理ロジックを実装
+        {{preprocess_logic}}
+        
+        return processed_data
+        
+    except Exception as e:
+        logger.error(f"データの前処理に失敗しました: {e}")
+        raise
+
+
+def _execute_{{function_name}}_logic(processed_data: Any) -> Any:
+    """
+    {{function_name}}のメインロジック実行
+    
+    Args:
+        processed_data: 前処理済みデータ
+        
+    Returns:
+        Any: 処理結果
+    """
+    try:
+        # メインロジックを実装
+        {{main_logic}}
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"メインロジックの実行に失敗しました: {e}")
+        raise
+
+
+def _postprocess_{{function_name}}_result(result: Any) -> {{return_type}}:
+    """
+    {{function_name}}の結果後処理
+    
+    Args:
+        result: 処理結果
+        
+    Returns:
+        {{return_type}}: 最終結果
+    """
+    try:
+        # 結果の後処理ロジックを実装
+        {{postprocess_logic}}
+        
+        return final_result
+        
+    except Exception as e:
+        logger.error(f"結果の後処理に失敗しました: {e}")
+        raise
+
+
+def _validate_{{function_name}}_output(result: {{return_type}}) -> bool:
+    """
+    {{function_name}}の出力値を検証
+    
+    Args:
+        result: 検証する結果
+        
+    Returns:
+        bool: 検証成功の場合True
+    """
+    try:
+        # 出力値の検証ロジックを実装
+        {{output_validation_logic}}
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"出力値の検証に失敗しました: {e}")
+        return False
+
+
+# ユーティリティ関数群
+def create_{{function_name}}_batch_processor(
+    batch_size: int = 100,
+    parallel: bool = False,
+    max_workers: Optional[int] = None
+) -> Callable:
+    """
+    {{function_name}}のバッチ処理版を作成
+    
+    Args:
+        batch_size: バッチサイズ
+        parallel: 並列処理を行うか
+        max_workers: 最大ワーカー数
+        
+    Returns:
+        Callable: バッチ処理関数
+    """
+    def batch_processor(data_list: List[Any]) -> List[FunctionResult]:
+        results = []
+        
+        if parallel:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = []
+                for i in range(0, len(data_list), batch_size):
+                    batch = data_list[i:i + batch_size]
+                    for item in batch:
+                        future = executor.submit(safe_execute, {{function_name}}, item)
+                        futures.append(future)
+                
+                for future in as_completed(futures):
+                    results.append(future.result())
+        else:
+            for i in range(0, len(data_list), batch_size):
+                batch = data_list[i:i + batch_size]
+                for item in batch:
+                    result = safe_execute({{function_name}}, item)
+                    results.append(result)
+        
+        return results
+    
+    return batch_processor
+
+
+def {{function_name}}_with_cache(cache_size: int = 128):
+    """
+    {{function_name}}のキャッシュ付きバージョンを作成
+    
+    Args:
+        cache_size: キャッシュサイズ
+        
+    Returns:
+        Callable: キャッシュ付き関数
+    """
+    from functools import lru_cache
+    
+    @lru_cache(maxsize=cache_size)
+    def cached_{{function_name}}(*args, **kwargs):
+        return {{function_name}}(*args, **kwargs)
+    
+    return cached_{{function_name}}
+
+
+# 使用例とテスト用のコード
+if __name__ == "__main__":
+    # 基本的な使用例
+    try:
+        result = {{function_name}}({{test_args}})
+        print(f"実行結果: {result}")
+        
+        # 安全実行の例
+        safe_result = safe_execute({{function_name}}, {{test_args}})
+        if safe_result.is_success():
+            print(f"安全実行成功: {safe_result.result}")
+        else:
+            print(f"安全実行失敗: {safe_result.get_error_message()}")
+        
+        # バッチ処理の例
+        batch_processor = create_{{function_name}}_batch_processor(batch_size=10)
+        batch_results = batch_processor([{{test_batch_data}}])
+        successful_results = [r for r in batch_results if r.is_success()]
+        print(f"バッチ処理成功数: {len(successful_results)}")
+        
+        # キャッシュ付き実行の例
+        cached_func = {{function_name}}_with_cache(cache_size=64)
+        cached_result = cached_func({{test_args}})
+        print(f"キャッシュ付き実行結果: {cached_result}")
+        
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+        logger.error(f"テスト実行中にエラーが発生しました: {e}")

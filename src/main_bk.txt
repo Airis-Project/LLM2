@@ -1,0 +1,172 @@
+# src/main.py
+"""
+LLM Code Assistant - メインエントリーポイント
+ローカルLLMを使用したコードアシスタントアプリケーション
+"""
+
+import sys
+import os
+import logging
+from pathlib import Path
+from typing import Optional
+
+# プロジェクトルートをPythonパスに追加
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from PyQt5.QtWidgets import QApplication, QMessageBox
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+
+from src.core.config_manager import ConfigManager
+from src.core.logger import Logger
+from src.core.project_manager import ProjectManager
+from src.core.event_system import EventSystem
+from src.ui.main_window import MainWindow
+from src.utils.validation_utils import ValidationUtils
+
+
+class LLMCodeAssistant:
+    """
+    LLM Code Assistant メインアプリケーションクラス
+    """
+    
+    def __init__(self):
+        """アプリケーションの初期化"""
+        self.app: Optional[QApplication] = None
+        self.main_window: Optional[MainWindow] = None
+        self.config_manager: Optional[ConfigManager] = None
+        self.logger: Optional[Logger] = None
+        self.project_manager: Optional[ProjectManager] = None
+        self.event_system: Optional[EventSystem] = None
+        
+    def initialize(self) -> bool:
+        """
+        アプリケーションの初期化処理
+        
+        Returns:
+            bool: 初期化成功時True
+        """
+        try:
+            # Qt アプリケーションの初期化
+            self.app = QApplication(sys.argv)
+            self.app.setApplicationName("LLM Code Assistant")
+            self.app.setApplicationVersion("1.0.0")
+            self.app.setOrganizationName("LLM Code Assistant Team")
+            
+            # アプリケーションアイコンの設定
+            icon_path = project_root / "assets" / "icons" / "app_icon.ico"
+            if icon_path.exists():
+                self.app.setWindowIcon(QIcon(str(icon_path)))
+            
+            # 設定管理の初期化
+            self.config_manager = ConfigManager()
+            if not self.config_manager.initialize():
+                self._show_error("設定管理の初期化に失敗しました。")
+                return False
+            
+            # ログシステムの初期化
+            self.logger = Logger()
+            if not self.logger.initialize():
+                self._show_error("ログシステムの初期化に失敗しました。")
+                return False
+            
+            # イベントシステムの初期化
+            self.event_system = EventSystem()
+            
+            # プロジェクト管理の初期化
+            self.project_manager = ProjectManager(
+                config_manager=self.config_manager,
+                event_system=self.event_system
+            )
+            
+            # メインウィンドウの初期化
+            self.main_window = MainWindow(
+                config_manager=self.config_manager,
+                project_manager=self.project_manager,
+                event_system=self.event_system
+            )
+            
+            # 初期化完了ログ
+            self.logger.info("LLM Code Assistant が正常に初期化されました。")
+            
+            return True
+            
+        except Exception as e:
+            self._show_error(f"アプリケーションの初期化中にエラーが発生しました: {str(e)}")
+            return False
+    
+    def run(self) -> int:
+        """
+        アプリケーションの実行
+        
+        Returns:
+            int: アプリケーション終了コード
+        """
+        if not self.initialize():
+            return 1
+        
+        try:
+            # メインウィンドウを表示
+            self.main_window.show()
+            
+            # 起動完了ログ
+            self.logger.info("LLM Code Assistant が起動しました。")
+            
+            # アプリケーションループの開始
+            return self.app.exec_()
+            
+        except Exception as e:
+            self._show_error(f"アプリケーション実行中にエラーが発生しました: {str(e)}")
+            return 1
+        finally:
+            self._cleanup()
+    
+    def _cleanup(self):
+        """アプリケーション終了時のクリーンアップ処理"""
+        try:
+            if self.logger:
+                self.logger.info("LLM Code Assistant を終了します。")
+            
+            # 各コンポーネントのクリーンアップ
+            if self.main_window:
+                self.main_window.cleanup()
+            
+            if self.project_manager:
+                self.project_manager.cleanup()
+            
+            if self.config_manager:
+                self.config_manager.save_config()
+            
+        except Exception as e:
+            print(f"クリーンアップ中にエラーが発生しました: {str(e)}")
+    
+    def _show_error(self, message: str):
+        """エラーメッセージの表示"""
+        try:
+            if self.app:
+                QMessageBox.critical(None, "エラー", message)
+            else:
+                print(f"エラー: {message}")
+        except Exception:
+            print(f"エラー: {message}")
+
+
+def main():
+    """メイン関数"""
+    # 環境変数の設定
+    os.environ.setdefault('QT_AUTO_SCREEN_SCALE_FACTOR', '1')
+    
+    # 高DPI対応
+    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+    
+    # アプリケーションの作成と実行
+    assistant = LLMCodeAssistant()
+    exit_code = assistant.run()
+    
+    sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()

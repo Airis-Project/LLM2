@@ -1,0 +1,319 @@
+{
+  "_comment": "assets/themes/dark_theme.json - ダークテーマの設定ファイル",
+  "theme_info": {
+    "name": "Dark Theme",
+    "display_name": "ダークテーマ",
+    "version": "1.0.0",
+    "author": "LLM Code Assistant",
+    "description": "暗い色調のテーマ。夜間作業や目の疲労軽減に適している",
+    "description_ja": "暗い色調のテーマです。夜間の作業や長時間の作業による目の疲労軽減に適しています。"
+  },
+  "colors": {
+    "primary": {
+      "background": "#1E1E1E",
+      "foreground": "#FFFFFF",
+      "accent": "#0078D4",
+      "accent_hover": "#106EBE",
+      "accent_pressed": "#005A9E"
+    },
+    "secondary": {
+      "background": "#2D2D30",
+      "foreground": "#CCCCCC",
+      "border": "#3F3F46",
+      "hover": "#383838",
+      "pressed": "#404040"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#CCCCCC",
+      "disabled": "#666666",
+      "link": "#4FC3F7",
+      "link_hover": "#29B6F6",
+      "selection": "#0078D4",
+      "selection_background": "#264F78"
+    },
+    "editor": {
+      "background": "#1E1E1E",
+      "foreground": "#D4D4D4",
+      "line_number": "#858585",
+      "line_number_background": "#1E1E1E",
+      "current_line": "#2A2D2E",
+      "selection": "#264F78",
+      "cursor": "#FFFFFF",
+      "bracket_match": "#0E639C",
+      "bracket_mismatch": "#F44747"
+    },
+    "syntax": {
+      "keyword": "#569CD6",
+      "string": "#CE9178",
+      "comment": "#6A9955",
+      "number": "#B5CEA8",
+      "operator": "#D4D4D4",
+      "function": "#DCDCAA",
+      "class": "#4EC9B0",
+      "variable": "#9CDCFE",
+      "constant": "#4FC1FF",
+      "type": "#4EC9B0",
+      "decorator": "#DCDCAA",
+      "builtin": "#569CD6",
+      "error": "#F44747",
+      "warning": "#FFCC02"
+    },
+    "ui": {
+      "toolbar": {
+        "background": "#2D2D30",
+        "foreground": "#CCCCCC",
+        "border": "#3F3F46",
+        "button_hover": "#383838",
+        "button_pressed": "#404040"
+      },
+      "sidebar": {
+        "background": "#252526",
+        "foreground": "#CCCCCC",
+        "border": "#3F3F46",
+        "item_hover": "#2A2D2E",
+        "item_selected": "#094771",
+        "item_selected_foreground": "#FFFFFF"
+      },
+      "statusbar": {
+        "background": "#007ACC",
+        "foreground": "#FFFFFF",
+        "border": "#005A9E"
+      },
+      "menubar": {
+        "background": "#2D2D30",
+        "foreground": "#CCCCCC",
+        "border": "#3F3F46",
+        "item_hover": "#383838",
+        "item_selected": "#0078D4",
+        "item_selected_foreground": "#FFFFFF"
+      },
+      "dialog": {
+        "background": "#2D2D30",
+        "foreground": "#CCCCCC",
+        "border": "#3F3F46",
+        "title_background": "#383838",
+        "title_foreground": "#FFFFFF"
+      },
+      "button": {
+        "background": "#0E639C",
+        "foreground": "#FFFFFF",
+        "border": "#007ACC",
+        "hover_background": "#1177BB",
+        "hover_border": "#1177BB",
+        "pressed_background": "#005A9E",
+        "pressed_border": "#005A9E",
+        "disabled_background": "#2D2D30",
+        "disabled_foreground": "#666666"
+      },
+      "input": {
+        "background": "#3C3C3C",
+        "foreground": "#CCCCCC",
+        "border": "#3F3F46",
+        "focus_border": "#007ACC",
+        "placeholder": "#858585",
+        "disabled_background": "#2D2D30",
+        "disabled_foreground": "#666666"
+      },
+      "tree": {
+        "background": "#252526",
+        "foreground": "#CCCCCC",
+        "line": "#3F3F46",
+        "selection": "#094771",
+        "selection_foreground": "#FFFFFF",
+        "hover": "#2A2D2E",
+        "expand_icon": "#CCCCCC"
+      },
+      "tab": {
+        "background": "#2D2D30",
+        "foreground": "#969696",
+        "active_background": "#1E1E1E",
+        "active_foreground": "#FFFFFF",
+        "hover_background": "#383838",
+        "border": "#3F3F46",
+        "close_button": "#969696",
+        "close_button_hover": "#F44747"
+      },
+      "scrollbar": {
+        "background": "#2D2D30",
+        "thumb": "#424242",
+        "thumb_hover": "#4F4F4F",
+        "thumb_pressed": "#5A5A5A",
+        "arrow": "#858585",
+        "arrow_hover": "#CCCCCC"
+      },
+      "tooltip": {
+        "background": "#1E1E1E",
+        "foreground": "#CCCCCC",
+        "border": "#3F3F46"
+      },
+      "notification": {
+        "info_background": "#1A365D",
+        "info_foreground": "#90CDF4",
+        "info_border": "#2C5282",
+        "success_background": "#1C4532",
+        "success_foreground": "#9AE6B4",
+        "success_border": "#2F855A",
+        "warning_background": "#744210",
+        "warning_foreground": "#F6E05E",
+        "warning_border": "#B7791F",
+        "error_background": "#742A2A",
+        "error_foreground": "#FEB2B2",
+        "error_border": "#C53030"
+      }
+    },
+    "chat": {
+      "background": "#1E1E1E",
+      "user_message_background": "#264F78",
+      "user_message_foreground": "#FFFFFF",
+      "assistant_message_background": "#2D2D30",
+      "assistant_message_foreground": "#CCCCCC",
+      "system_message_background": "#744210",
+      "system_message_foreground": "#F6E05E",
+      "timestamp": "#858585",
+      "border": "#3F3F46"
+    },
+    "code_completion": {
+      "background": "#252526",
+      "foreground": "#CCCCCC",
+      "selection": "#094771",
+      "selection_foreground": "#FFFFFF",
+      "border": "#3F3F46",
+      "keyword": "#569CD6",
+      "function": "#DCDCAA",
+      "variable": "#9CDCFE",
+      "type": "#4EC9B0"
+    }
+  },
+  "fonts": {
+    "ui": {
+      "family": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
+      "size": 9,
+      "weight": "normal"
+    },
+    "editor": {
+      "family": "Consolas, 'Courier New', monospace",
+      "size": 10,
+      "weight": "normal",
+      "line_height": 1.4
+    },
+    "code": {
+      "family": "Consolas, 'Courier New', monospace",
+      "size": 9,
+      "weight": "normal"
+    },
+    "title": {
+      "family": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
+      "size": 12,
+      "weight": "bold"
+    },
+    "subtitle": {
+      "family": "Segoe UI, Tahoma, Geneva, Verdana, sans-serif",
+      "size": 10,
+      "weight": "bold"
+    }
+  },
+  "spacing": {
+    "small": 4,
+    "medium": 8,
+    "large": 16,
+    "extra_large": 24,
+    "padding": {
+      "small": 4,
+      "medium": 8,
+      "large": 12,
+      "extra_large": 16
+    },
+    "margin": {
+      "small": 4,
+      "medium": 8,
+      "large": 16,
+      "extra_large": 24
+    },
+    "border_radius": {
+      "small": 2,
+      "medium": 4,
+      "large": 6,
+      "extra_large": 8
+    }
+  },
+  "borders": {
+    "thin": 1,
+    "medium": 2,
+    "thick": 3,
+    "style": "solid"
+  },
+  "shadows": {
+    "small": "0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.6)",
+    "medium": "0 3px 6px rgba(0,0,0,0.6), 0 3px 6px rgba(0,0,0,0.7)",
+    "large": "0 10px 20px rgba(0,0,0,0.7), 0 6px 6px rgba(0,0,0,0.8)",
+    "inset": "inset 0 1px 3px rgba(0,0,0,0.5)"
+  },
+  "animations": {
+    "duration": {
+      "fast": 150,
+      "normal": 250,
+      "slow": 400
+    },
+    "easing": {
+      "ease_in": "cubic-bezier(0.4, 0, 1, 1)",
+      "ease_out": "cubic-bezier(0, 0, 0.2, 1)",
+      "ease_in_out": "cubic-bezier(0.4, 0, 0.2, 1)"
+    }
+  },
+  "icons": {
+    "size": {
+      "small": 16,
+      "medium": 20,
+      "large": 24,
+      "extra_large": 32
+    },
+    "color": {
+      "primary": "#FFFFFF",
+      "secondary": "#CCCCCC",
+      "disabled": "#666666",
+      "accent": "#0078D4"
+    }
+  },
+  "editor_settings": {
+    "line_numbers": true,
+    "word_wrap": false,
+    "show_whitespace": false,
+    "show_indent_guides": true,
+    "highlight_current_line": true,
+    "highlight_matching_brackets": true,
+    "fold_code": true,
+    "minimap": true,
+    "ruler_columns": [80, 120],
+    "tab_size": 4,
+    "insert_spaces": true
+  },
+  "ui_settings": {
+    "show_toolbar": true,
+    "show_statusbar": true,
+    "show_sidebar": true,
+    "sidebar_width": 250,
+    "show_minimap": true,
+    "show_line_numbers": true,
+    "word_wrap": false,
+    "auto_save": true,
+    "auto_save_interval": 30,
+    "confirm_exit": true,
+    "remember_window_state": true
+  },
+  "accessibility": {
+    "high_contrast": false,
+    "large_text": false,
+    "screen_reader_support": true,
+    "keyboard_navigation": true,
+    "focus_indicators": true,
+    "reduced_motion": false
+  },
+  "custom_properties": {
+    "window_opacity": 1.0,
+    "blur_background": false,
+    "gradient_backgrounds": false,
+    "rounded_corners": true,
+    "glass_effect": false
+  }
+}

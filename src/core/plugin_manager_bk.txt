@@ -1,0 +1,742 @@
+# src/core/plugin_manager.py
+"""
+プラグインマネージャーモジュール
+プラグインの読み込み、管理、実行を行う
+動的なプラグインシステムを提供
+"""
+
+import os
+import sys
+import importlib
+import importlib.util
+from pathlib import Path
+from typing import Dict, List, Optional, Any, Type, Callable
+from dataclasses import dataclass, asdict
+from datetime import datetime
+import json
+import threading
+from abc import ABC, abstractmethod
+import inspect
+
+from .logger import get_logger
+from .config_manager import get_config
+from .event_system import get_event_system, Event
+from ..utils.file_utils import FileUtils
+from ..utils.validation_utils import ValidationUtils
+
+logger = get_logger(__name__)
+
+@dataclass
+class PluginInfo:
+    """プラグイン情報のデータクラス"""
+    name: str
+    version: str
+    description: str = ""
+    author: str = ""
+    license: str = ""
+    homepage: str = ""
+    dependencies: List[str] = None
+    python_requires: str = ""
+    entry_point: str = ""
+    category: str = ""
+    tags: List[str] = None
+    enabled: bool = True
+    loaded: bool = False
+    error: str = ""
+    path: str = ""
+    module_name: str = ""
+    
+    def __post_init__(self):
+        if self.dependencies is None:
+            self.dependencies = []
+        if self.tags is None:
+            self.tags = []
+
+@dataclass
+class PluginHook:
+    """プラグインフック情報のデータクラス"""
+    name: str
+    description: str = ""
+    parameters: List[str] = None
+    return_type: str = "Any"
+    
+    def __post_init__(self):
+        if self.parameters is None:
+            self.parameters = []
+
+class BasePlugin(ABC):
+    """プラグインベースクラス"""
+    
+    def __init__(self):
+        """初期化"""
+        self.name = ""
+        self.version = "1.0.0"
+        self.description = ""
+        self.author = ""
+        self.enabled = True
+        self.logger = get_logger(self.__class__.__name__)
+        self.event_system = get_event_system()
+    
+    @abstractmethod
+    def initialize(self) -> bool:
+        """
+        プラグインを初期化
+        
+        Returns:
+            bool: 初期化成功フラグ
+        """
+        pass
+    
+    @abstractmethod
+    def cleanup(self):
+        """プラグインをクリーンアップ"""
+        pass
+    
+    def get_info(self) -> PluginInfo:
+        """
+        プラグイン情報を取得
+        
+        Returns:
+            PluginInfo: プラグイン情報
+        """
+        return PluginInfo(
+            name=self.name,
+            version=self.version,
+            description=self.description,
+            author=self.author,
+            enabled=self.enabled
+        )
+    
+    def get_hooks(self) -> List[PluginHook]:
+        """
+        プラグインフック一覧を取得
+        
+        Returns:
+            List[PluginHook]: フック一覧
+        """
+        hooks = []
+        
+        # メソッドを検査してフックを抽出
+        for name, method in inspect.getmembers(self, predicate=inspect.ismethod):
+            if hasattr(method, '_plugin_hook'):
+                hook_info = getattr(method, '_plugin_hook')
+                hooks.append(PluginHook(
+                    name=name,
+                    description=hook_info.get('description', ''),
+                    parameters=hook_info.get('parameters', []),
+                    return_type=hook_info.get('return_type', 'Any')
+                ))
+        
+        return hooks
+    
+    def emit_event(self, event_name: str, data: Any = None):
+        """イベントを発行"""
+        event = Event(event_name, data, source=self.name)
+        self.event_system.emit(event)
+    
+    def subscribe_event(self, event_name: str, callback: Callable):
+        """イベントを購読"""
+        self.event_system.subscribe(event_name, callback)
+
+def plugin_hook(description: str = "", parameters: List[str] = None, return_type: str = "Any"):
+    """プラグインフックデコレーター"""
+    def decorator(func):
+        func._plugin_hook = {
+            'description': description,
+            'parameters': parameters or [],
+            'return_type': return_type
+        }
+        return func
+    return decorator
+
+class PluginLoader:
+    """プラグインローダークラス"""
+    
+    def __init__(self):
+        """初期化"""
+        self.logger = get_logger(__name__)
+        self.file_utils = FileUtils()
+        self.validation_utils = ValidationUtils()
+    
+    def load_plugin_info(self, plugin_path: Path) -> Optional[PluginInfo]:
+        """
+        プラグイン情報を読み込み
+        
+        Args:
+            plugin_path: プラグインパス
+            
+        Returns:
+            Optional[PluginInfo]: プラグイン情報
+        """
+        try:
+            # plugin.jsonファイルをチェック
+            info_file = plugin_path / "plugin.json"
+            if not info_file.exists():
+                # __init__.pyから情報を抽出を試行
+                return self._extract_info_from_init(plugin_path)
+            
+            # plugin.jsonを読み込み
+            info_data = json.loads(info_file.read_text(encoding='utf-8'))
+            
+            plugin_info = PluginInfo(
+                name=info_data.get('name', plugin_path.name),
+                version=info_data.get('version', '1.0.0'),
+                description=info_data.get('description', ''),
+                author=info_data.get('author', ''),
+                license=info_data.get('license', ''),
+                homepage=info_data.get('homepage', ''),
+                dependencies=info_data.get('dependencies', []),
+                python_requires=info_data.get('python_requires', ''),
+                entry_point=info_data.get('entry_point', ''),
+                category=info_data.get('category', ''),
+                tags=info_data.get('tags', []),
+                enabled=info_data.get('enabled', True),
+                path=str(plugin_path),
+                module_name=plugin_path.name
+            )
+            
+            return plugin_info
+            
+        except Exception as e:
+            self.logger.error(f"プラグイン情報読み込みエラー {plugin_path}: {e}")
+            return None
+    
+    def _extract_info_from_init(self, plugin_path: Path) -> Optional[PluginInfo]:
+        """__init__.pyからプラグイン情報を抽出"""
+        try:
+            init_file = plugin_path / "__init__.py"
+            if not init_file.exists():
+                return None
+            
+            content = init_file.read_text(encoding='utf-8')
+            
+            # 基本情報を抽出
+            name = plugin_path.name
+            version = "1.0.0"
+            description = ""
+            author = ""
+            
+            # __version__を検索
+            import re
+            version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
+            if version_match:
+                version = version_match.group(1)
+            
+            # __description__を検索
+            desc_match = re.search(r'__description__\s*=\s*["\']([^"\']+)["\']', content)
+            if desc_match:
+                description = desc_match.group(1)
+            
+            # __author__を検索
+            author_match = re.search(r'__author__\s*=\s*["\']([^"\']+)["\']', content)
+            if author_match:
+                author = author_match.group(1)
+            
+            return PluginInfo(
+                name=name,
+                version=version,
+                description=description,
+                author=author,
+                path=str(plugin_path),
+                module_name=plugin_path.name
+            )
+            
+        except Exception as e:
+            self.logger.error(f"__init__.pyからの情報抽出エラー {plugin_path}: {e}")
+            return None
+    
+    def load_plugin_module(self, plugin_info: PluginInfo) -> Optional[Any]:
+        """
+        プラグインモジュールを読み込み
+        
+        Args:
+            plugin_info: プラグイン情報
+            
+        Returns:
+            Optional[Any]: プラグインモジュール
+        """
+        try:
+            plugin_path = Path(plugin_info.path)
+            
+            # モジュールパスをsys.pathに追加
+            if str(plugin_path.parent) not in sys.path:
+                sys.path.insert(0, str(plugin_path.parent))
+            
+            # モジュールを読み込み
+            if plugin_info.entry_point:
+                # エントリーポイントが指定されている場合
+                module_path = plugin_path / f"{plugin_info.entry_point}.py"
+                if module_path.exists():
+                    spec = importlib.util.spec_from_file_location(
+                        plugin_info.module_name, module_path
+                    )
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    return module
+            
+            # __init__.pyを読み込み
+            init_path = plugin_path / "__init__.py"
+            if init_path.exists():
+                spec = importlib.util.spec_from_file_location(
+                    plugin_info.module_name, init_path
+                )
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                return module
+            
+            # ディレクトリ名でモジュールを読み込み
+            module = importlib.import_module(plugin_info.module_name)
+            return module
+            
+        except Exception as e:
+            self.logger.error(f"プラグインモジュール読み込みエラー {plugin_info.name}: {e}")
+            return None
+    
+    def find_plugin_class(self, module: Any) -> Optional[Type[BasePlugin]]:
+        """
+        プラグインクラスを検索
+        
+        Args:
+            module: プラグインモジュール
+            
+        Returns:
+            Optional[Type[BasePlugin]]: プラグインクラス
+        """
+        try:
+            # モジュール内のクラスを検査
+            for name, obj in inspect.getmembers(module, inspect.isclass):
+                if (issubclass(obj, BasePlugin) and 
+                    obj != BasePlugin and 
+                    obj.__module__ == module.__name__):
+                    return obj
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"プラグインクラス検索エラー: {e}")
+            return None
+
+class PluginRegistry:
+    """プラグインレジストリクラス"""
+    
+    def __init__(self):
+        """初期化"""
+        self.plugins: Dict[str, PluginInfo] = {}
+        self.instances: Dict[str, BasePlugin] = {}
+        self.hooks: Dict[str, List[Callable]] = {}
+        self.lock = threading.Lock()
+        self.logger = get_logger(__name__)
+    
+    def register_plugin(self, plugin_info: PluginInfo):
+        """プラグインを登録"""
+        with self.lock:
+            self.plugins[plugin_info.name] = plugin_info
+            self.logger.debug(f"プラグインを登録しました: {plugin_info.name}")
+    
+    def unregister_plugin(self, plugin_name: str):
+        """プラグインの登録を解除"""
+        with self.lock:
+            if plugin_name in self.plugins:
+                del self.plugins[plugin_name]
+            
+            if plugin_name in self.instances:
+                del self.instances[plugin_name]
+            
+            self.logger.debug(f"プラグインの登録を解除しました: {plugin_name}")
+    
+    def get_plugin_info(self, plugin_name: str) -> Optional[PluginInfo]:
+        """プラグイン情報を取得"""
+        return self.plugins.get(plugin_name)
+    
+    def get_all_plugins(self) -> List[PluginInfo]:
+        """全プラグイン情報を取得"""
+        return list(self.plugins.values())
+    
+    def get_enabled_plugins(self) -> List[PluginInfo]:
+        """有効なプラグイン情報を取得"""
+        return [p for p in self.plugins.values() if p.enabled]
+    
+    def set_plugin_instance(self, plugin_name: str, instance: BasePlugin):
+        """プラグインインスタンスを設定"""
+        with self.lock:
+            self.instances[plugin_name] = instance
+    
+    def get_plugin_instance(self, plugin_name: str) -> Optional[BasePlugin]:
+        """プラグインインスタンスを取得"""
+        return self.instances.get(plugin_name)
+    
+    def register_hook(self, hook_name: str, callback: Callable):
+        """フックを登録"""
+        with self.lock:
+            if hook_name not in self.hooks:
+                self.hooks[hook_name] = []
+            self.hooks[hook_name].append(callback)
+    
+    def unregister_hook(self, hook_name: str, callback: Callable):
+        """フックの登録を解除"""
+        with self.lock:
+            if hook_name in self.hooks and callback in self.hooks[hook_name]:
+                self.hooks[hook_name].remove(callback)
+    
+    def call_hooks(self, hook_name: str, *args, **kwargs) -> List[Any]:
+        """フックを呼び出し"""
+        results = []
+        
+        if hook_name in self.hooks:
+            for callback in self.hooks[hook_name]:
+                try:
+                    result = callback(*args, **kwargs)
+                    results.append(result)
+                except Exception as e:
+                    self.logger.error(f"フック呼び出しエラー {hook_name}: {e}")
+        
+        return results
+
+class PluginManager:
+    """プラグインマネージャークラス"""
+    
+    def __init__(self, plugin_dirs: Optional[List[str]] = None):
+        """
+        初期化
+        
+        Args:
+            plugin_dirs: プラグインディレクトリリスト
+        """
+        config = get_config()
+        
+        # デフォルトプラグインディレクトリ
+        default_dirs = [
+            "./plugins",
+            "./src/plugins",
+            str(Path(__file__).parent.parent / "plugins")
+        ]
+        
+        self.plugin_dirs = plugin_dirs or default_dirs
+        
+        # 存在するディレクトリのみを使用
+        self.plugin_dirs = [d for d in self.plugin_dirs if Path(d).exists()]
+        
+        # プラグインディレクトリを作成
+        for plugin_dir in self.plugin_dirs:
+            Path(plugin_dir).mkdir(parents=True, exist_ok=True)
+        
+        # コンポーネント初期化
+        self.loader = PluginLoader()
+        self.registry = PluginRegistry()
+        self.event_system = get_event_system()
+        
+        # 設定
+        plugin_config = config.get('plugin_manager', {})
+        self.auto_load = plugin_config.get('auto_load', True)
+        self.safe_mode = plugin_config.get('safe_mode', True)
+        
+        self.logger = get_logger(__name__)
+        
+        # プラグインを自動読み込み
+        if self.auto_load:
+            self.discover_plugins()
+            self.load_enabled_plugins()
+    
+    def discover_plugins(self) -> List[PluginInfo]:
+        """
+        プラグインを発見
+        
+        Returns:
+            List[PluginInfo]: 発見されたプラグイン情報リスト
+        """
+        discovered_plugins = []
+        
+        try:
+            for plugin_dir in self.plugin_dirs:
+                plugin_path = Path(plugin_dir)
+                
+                # プラグインディレクトリを検索
+                for item in plugin_path.iterdir():
+                    if item.is_dir() and not item.name.startswith('.'):
+                        plugin_info = self.loader.load_plugin_info(item)
+                        if plugin_info:
+                            self.registry.register_plugin(plugin_info)
+                            discovered_plugins.append(plugin_info)
+                            self.logger.info(f"プラグインを発見しました: {plugin_info.name}")
+            
+            self.logger.info(f"{len(discovered_plugins)}個のプラグインを発見しました")
+            
+        except Exception as e:
+            self.logger.error(f"プラグイン発見エラー: {e}")
+        
+        return discovered_plugins
+    
+    def load_plugin(self, plugin_name: str) -> bool:
+        """
+        プラグインを読み込み
+        
+        Args:
+            plugin_name: プラグイン名
+            
+        Returns:
+            bool: 読み込み成功フラグ
+        """
+        try:
+            plugin_info = self.registry.get_plugin_info(plugin_name)
+            if not plugin_info:
+                self.logger.error(f"プラグインが見つかりません: {plugin_name}")
+                return False
+            
+            if plugin_info.loaded:
+                self.logger.warning(f"プラグインは既に読み込まれています: {plugin_name}")
+                return True
+            
+            if not plugin_info.enabled:
+                self.logger.warning(f"プラグインが無効です: {plugin_name}")
+                return False
+            
+            # 依存関係をチェック
+            if not self._check_dependencies(plugin_info):
+                self.logger.error(f"依存関係が満たされていません: {plugin_name}")
+                return False
+            
+            # モジュールを読み込み
+            module = self.loader.load_plugin_module(plugin_info)
+            if not module:
+                self.logger.error(f"プラグインモジュール読み込み失敗: {plugin_name}")
+                return False
+            
+            # プラグインクラスを検索
+            plugin_class = self.loader.find_plugin_class(module)
+            if not plugin_class:
+                self.logger.error(f"プラグインクラスが見つかりません: {plugin_name}")
+                return False
+            
+            # プラグインインスタンスを作成
+            plugin_instance = plugin_class()
+            
+            # プラグインを初期化
+            if not plugin_instance.initialize():
+                self.logger.error(f"プラグイン初期化失敗: {plugin_name}")
+                return False
+            
+            # レジストリに登録
+            self.registry.set_plugin_instance(plugin_name, plugin_instance)
+            
+            # フックを登録
+            self._register_plugin_hooks(plugin_name, plugin_instance)
+            
+            # 状態を更新
+            plugin_info.loaded = True
+            plugin_info.error = ""
+            
+            # イベントを発行
+            self.event_system.emit(Event('plugin_loaded', {
+                'plugin_name': plugin_name,
+                'plugin_info': plugin_info
+            }))
+            
+            self.logger.info(f"プラグインを読み込みました: {plugin_name}")
+            return True
+            
+        except Exception as e:
+            error_msg = f"プラグイン読み込みエラー {plugin_name}: {e}"
+            self.logger.error(error_msg)
+            
+            # エラー情報を保存
+            plugin_info = self.registry.get_plugin_info(plugin_name)
+            if plugin_info:
+                plugin_info.error = str(e)
+            
+            return False
+    
+    def unload_plugin(self, plugin_name: str) -> bool:
+        """
+        プラグインをアンロード
+        
+        Args:
+            plugin_name: プラグイン名
+            
+        Returns:
+            bool: アンロード成功フラグ
+        """
+        try:
+            plugin_info = self.registry.get_plugin_info(plugin_name)
+            if not plugin_info or not plugin_info.loaded:
+                self.logger.warning(f"プラグインが読み込まれていません: {plugin_name}")
+                return True
+            
+            # プラグインインスタンスを取得
+            plugin_instance = self.registry.get_plugin_instance(plugin_name)
+            if plugin_instance:
+                # クリーンアップ
+                plugin_instance.cleanup()
+                
+                # フックを解除
+                self._unregister_plugin_hooks(plugin_name, plugin_instance)
+            
+            # レジストリから削除
+            self.registry.unregister_plugin(plugin_name)
+            
+            # 状態を更新
+            plugin_info.loaded = False
+            
+            # イベントを発行
+            self.event_system.emit(Event('plugin_unloaded', {
+                'plugin_name': plugin_name,
+                'plugin_info': plugin_info
+            }))
+            
+            self.logger.info(f"プラグインをアンロードしました: {plugin_name}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"プラグインアンロードエラー {plugin_name}: {e}")
+            return False
+    
+    def reload_plugin(self, plugin_name: str) -> bool:
+        """
+        プラグインを再読み込み
+        
+        Args:
+            plugin_name: プラグイン名
+            
+        Returns:
+            bool: 再読み込み成功フラグ
+        """
+        try:
+            # アンロード
+            if not self.unload_plugin(plugin_name):
+                return False
+            
+            # 再読み込み
+            return self.load_plugin(plugin_name)
+            
+        except Exception as e:
+            self.logger.error(f"プラグイン再読み込みエラー {plugin_name}: {e}")
+            return False
+    
+    def load_enabled_plugins(self) -> int:
+        """
+        有効なプラグインを全て読み込み
+        
+        Returns:
+            int: 読み込み成功数
+        """
+        enabled_plugins = self.registry.get_enabled_plugins()
+        loaded_count = 0
+        
+        for plugin_info in enabled_plugins:
+            if self.load_plugin(plugin_info.name):
+                loaded_count += 1
+        
+        self.logger.info(f"{loaded_count}/{len(enabled_plugins)}個のプラグインを読み込みました")
+        return loaded_count
+    
+    def enable_plugin(self, plugin_name: str) -> bool:
+        """
+        プラグインを有効化
+        
+        Args:
+            plugin_name: プラグイン名
+            
+        Returns:
+            bool: 有効化成功フラグ
+        """
+        plugin_info = self.registry.get_plugin_info(plugin_name)
+        if not plugin_info:
+            return False
+        
+        plugin_info.enabled = True
+        self.logger.info(f"プラグインを有効化しました: {plugin_name}")
+        return True
+    
+    def disable_plugin(self, plugin_name: str) -> bool:
+        """
+        プラグインを無効化
+        
+        Args:
+            plugin_name: プラグイン名
+            
+        Returns:
+            bool: 無効化成功フラグ
+        """
+        plugin_info = self.registry.get_plugin_info(plugin_name)
+        if not plugin_info:
+            return False
+        
+        # 読み込まれている場合はアンロード
+        if plugin_info.loaded:
+            self.unload_plugin(plugin_name)
+        
+        plugin_info.enabled = False
+        self.logger.info(f"プラグインを無効化しました: {plugin_name}")
+        return True
+    
+    def _check_dependencies(self, plugin_info: PluginInfo) -> bool:
+        """依存関係をチェック"""
+        for dependency in plugin_info.dependencies:
+            dep_info = self.registry.get_plugin_info(dependency)
+            if not dep_info or not dep_info.loaded:
+                return False
+        return True
+    
+    def _register_plugin_hooks(self, plugin_name: str, plugin_instance: BasePlugin):
+        """プラグインフックを登録"""
+        hooks = plugin_instance.get_hooks()
+        
+        for hook in hooks:
+            method = getattr(plugin_instance, hook.name, None)
+            if method:
+                self.registry.register_hook(f"{plugin_name}.{hook.name}", method)
+    
+    def _unregister_plugin_hooks(self, plugin_name: str, plugin_instance: BasePlugin):
+        """プラグインフックの登録を解除"""
+        hooks = plugin_instance.get_hooks()
+        
+        for hook in hooks:
+            method = getattr(plugin_instance, hook.name, None)
+            if method:
+                self.registry.unregister_hook(f"{plugin_name}.{hook.name}", method)
+    
+    def call_hook(self, hook_name: str, *args, **kwargs) -> List[Any]:
+        """
+        フックを呼び出し
+        
+        Args:
+            hook_name: フック名
+            *args: 引数
+            **kwargs: キーワード引数
+            
+        Returns:
+            List[Any]: 結果リスト
+        """
+        return self.registry.call_hooks(hook_name, *args, **kwargs)
+    
+    def get_plugins(self) -> List[PluginInfo]:
+        """プラグイン一覧を取得"""
+        return self.registry.get_all_plugins()
+    
+    def get_plugin_info(self, plugin_name: str) -> Optional[PluginInfo]:
+        """プラグイン情報を取得"""
+        return self.registry.get_plugin_info(plugin_name)
+    
+    def get_plugin_instance(self, plugin_name: str) -> Optional[BasePlugin]:
+        """プラグインインスタンスを取得"""
+        return self.registry.get_plugin_instance(plugin_name)
+    
+    def cleanup(self):
+        """リソースをクリーンアップ"""
+        try:
+            # 全プラグインをアンロード
+            loaded_plugins = [p for p in self.registry.get_all_plugins() if p.loaded]
+            
+            for plugin_info in loaded_plugins:
+                self.unload_plugin(plugin_info.name)
+            
+            self.logger.info("プラグインマネージャーをクリーンアップしました")
+            
+        except Exception as e:
+            self.logger.error(f"プラグインマネージャークリーンアップエラー: {e}")
+
+# グローバルプラグインマネージャーインスタンス
+plugin_manager = PluginManager()
+
+def get_plugin_manager() -> PluginManager:
+    """グローバルプラグインマネージャーを取得"""
+    return plugin_manager
