@@ -4,7 +4,6 @@
 アプリケーションのメインUIを提供
 """
 
-import os
 import sys
 import logging
 from typing import Optional, Dict, Any
@@ -388,62 +387,25 @@ class MainWindow(QMainWindow):
             )
             
             if file_path:
-                # ファイル存在確認
-                if not os.path.exists(file_path):
-                    self.show_error_message("ファイルエラー", "指定されたファイルが見つかりません。")
-                    return
+                logger.info(f"ファイルを開く: {file_path}")
                 
-                try:
-                    # ファイル読み込み
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        content = file.read()
-                    
-                    # コンテンツを表示エリアに設定
-                    self.set_content_from_file(content, file_path)
-                    
-                    logger.info(f"ファイルを開く: {file_path}")
-                    
-                    # イベント発行
-                    self.event_bus.emit('file_action', {
-                        'action': 'open',
-                        'file_path': file_path,
-                        'timestamp': self.get_current_timestamp(),
-                        'success': True
-                    })
-                    
-                    self.update_status(f"ファイルを開きました: {Path(file_path).name}")
-                    self.show_info_message("ファイルを開く", f"ファイルを開きました:\n{file_path}")
-                    
-                except PermissionError:
-                    error_msg = "ファイルへの読み取り権限がありません。"
-                    logger.error(f"ファイル読み込みエラー (権限): {file_path}")
-                    self.show_error_message("読み込みエラー", error_msg)
-                    
-                except UnicodeDecodeError:
-                    error_msg = "ファイルの文字エンコーディングが対応していません。"
-                    logger.error(f"ファイル読み込みエラー (エンコーディング): {file_path}")
-                    self.show_error_message("読み込みエラー", error_msg)
-                    
-                except Exception as e:
-                    error_msg = f"ファイル読み込み中にエラーが発生しました: {str(e)}"
-                    logger.error(f"ファイル読み込みエラー: {file_path} - {e}")
-                    self.show_error_message("読み込みエラー", error_msg)
+                # イベント発行
+                self.event_bus.emit('file_action', {
+                    'action': 'open',
+                    'file_path': file_path,
+                    'timestamp': self.get_current_timestamp()
+                })
+                
+                self.update_status(f"ファイルを開きました: {Path(file_path).name}")
             
         except Exception as e:
-            logger.error(f"ファイルを開く処理中にエラーが発生しました: {e}")
+            logger.error(f"ファイルを開く際にエラーが発生しました: {e}")
             self.show_error_message("ファイルオープンエラー", str(e))
-
+    
     def save_file(self):
         """ファイルを保存"""
         try:
             from PyQt6.QtWidgets import QFileDialog
-            
-            # 保存するコンテンツを取得（チャット内容を例として使用）
-            content_to_save = self.get_content_to_save()
-            
-            if not content_to_save.strip():
-                self.show_info_message("保存", "保存するコンテンツがありません。")
-                return
             
             file_path, _ = QFileDialog.getSaveFileName(
                 self,
@@ -451,134 +413,23 @@ class MainWindow(QMainWindow):
                 "",
                 "テキストファイル (*.txt);;すべてのファイル (*)"
             )
+            
             if file_path:
-                # ファイル保存の確認
-                if os.path.exists(file_path):
-                    reply = QMessageBox.question(
-                        self,
-                        '上書き確認',
-                        f'ファイル "{os.path.basename(file_path)}" は既に存在します。\n上書きしますか？',
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                        QMessageBox.StandardButton.No
-                    )
-                    
-                    if reply != QMessageBox.StandardButton.Yes:
-                        self.update_status("保存をキャンセルしました")
-                        return
-                
-                # 実際のファイル保存処理
-                try:
-                    with open(file_path, 'w', encoding='utf-8') as file:
-                        file.write(content_to_save)
-                    
-                    logger.info(f"ファイルを保存: {file_path}")
-                    
-                    # イベント発行
-                    self.event_bus.emit('file_action', {
-                        'action': 'save',
-                        'file_path': file_path,
-                        'timestamp': self.get_current_timestamp(),
-                        'success': True
-                    })
-                    
-                    self.update_status(f"ファイルを保存しました: {Path(file_path).name}")
-                    self.show_info_message("保存完了", f"ファイルを保存しました:\n{file_path}")
-                    
-                except PermissionError:
-                    error_msg = "ファイルへの書き込み権限がありません。"
-                    logger.error(f"ファイル保存エラー (権限): {file_path}")
-                    self.show_error_message("保存エラー", error_msg)
-                    self.update_status("保存に失敗しました（権限エラー）")
-                    
-                except OSError as e:
-                    error_msg = f"ファイル保存中にエラーが発生しました: {str(e)}"
-                    logger.error(f"ファイル保存エラー (OS): {file_path} - {e}")
-                    self.show_error_message("保存エラー", error_msg)
-                    self.update_status("保存に失敗しました（OSエラー）")
-                    
-                except Exception as e:
-                    error_msg = f"予期しないエラーが発生しました: {str(e)}"
-                    logger.error(f"ファイル保存エラー (予期しない): {file_path} - {e}")
-                    self.show_error_message("保存エラー", error_msg)
-                    self.update_status("保存に失敗しました")
-            
-        except Exception as e:
-            logger.error(f"ファイル保存処理中にエラーが発生しました: {e}")
-            self.show_error_message("ファイル保存エラー", str(e))
-
-    def get_content_to_save(self) -> str:
-        """保存するコンテンツを取得"""
-        try:
-            # チャット内容を取得
-            chat_content = self.chat_display.toPlainText()
-            
-            if chat_content.strip():
-                return chat_content
-            
-            # チャット内容がない場合、デフォルトコンテンツを返す
-            return f"""# LLM Application - 保存ファイル
-    作成日時: {self.get_current_timestamp()}
-
-    このファイルはLLM Applicationから保存されました。
-    """
-            
-        except Exception as e:
-            logger.error(f"保存コンテンツ取得中にエラーが発生しました: {e}")
-            return f"エラー: コンテンツの取得に失敗しました - {str(e)}"
-    
-    def set_content_from_file(self, content: str, file_path: str):
-        """ファイルから読み込んだコンテンツを設定"""
-        try:
-            # チャット表示エリアに内容を設定
-            self.chat_display.clear()
-            self.chat_display.append(f"<b>ファイル読み込み:</b> {Path(file_path).name}")
-            self.chat_display.append("<hr>")
-            
-            # ファイル内容を表示（HTMLエスケープして表示）
-            escaped_content = content.replace('<', '&lt;').replace('>', '&gt;')
-            self.chat_display.append(f"<pre>{escaped_content}</pre>")
-            
-            # 自動スクロール
-            self.chat_display.verticalScrollBar().setValue(
-                self.chat_display.verticalScrollBar().maximum()
-            )
-            
-        except Exception as e:
-            logger.error(f"コンテンツ設定中にエラーが発生しました: {e}")
-            self.chat_display.append(f"<b>エラー:</b> コンテンツの表示に失敗しました - {str(e)}")
-
-    def new_file(self):
-        """新規ファイル作成"""
-        try:
-            logger.info("新規ファイル作成")
-            
-            # 確認ダイアログ
-            reply = QMessageBox.question(
-                self,
-                '新規作成',
-                '新しいファイルを作成しますか？\n現在の内容はクリアされます。',
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
-            )
-            
-            if reply == QMessageBox.StandardButton.Yes:
-                # チャット表示をクリア
-                self.chat_display.clear()
-                self.chat_display.append("<b>新規ファイル:</b> 新しいファイルが作成されました")
+                logger.info(f"ファイルを保存: {file_path}")
                 
                 # イベント発行
                 self.event_bus.emit('file_action', {
-                    'action': 'new',
-                    'timestamp': self.get_current_timestamp(),
-                    'success': True
+                    'action': 'save',
+                    'file_path': file_path,
+                    'timestamp': self.get_current_timestamp()
                 })
                 
-                self.update_status("新規ファイルを作成しました")
-                
+                self.update_status(f"ファイルを保存しました: {Path(file_path).name}")
+            
         except Exception as e:
-            logger.error(f"新規ファイル作成中にエラーが発生しました: {e}")
-            self.show_error_message("新規ファイル作成エラー", str(e))
-
+            logger.error(f"ファイル保存中にエラーが発生しました: {e}")
+            self.show_error_message("ファイル保存エラー", str(e))
+    
     def show_settings(self):
         """設定画面を表示"""
         try:
