@@ -1,70 +1,62 @@
 #src/ui/main_window.py
 """
-メインウィンドウモジュール
-アプリケーションのメインUIを提供
+メインウィンドウクラス
+LLM Code Assistant のメインUI
 """
 
-import os
-import sys
 import logging
-from typing import Optional, Dict, Any
-from pathlib import Path
-
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout,
-    QWidget, QPushButton, QTextEdit, QLineEdit, QLabel,
-    QSplitter, QTreeWidget, QTreeWidgetItem, QTabWidget,
-    QMenuBar, QMenu, QStatusBar, QToolBar, QMessageBox
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, 
+    QSplitter, QTabWidget, QMenuBar, QStatusBar,
+    QTextEdit, QPushButton, QComboBox, QLabel,
+    QProgressBar, QMessageBox, QToolBar, QAction
 )
-from PyQt6.QtGui import QAction
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QThread, pyqtSignal, QTimer
+from PyQt6.QtGui import QFont, QIcon
+
+from .llm_chat_panel import LLMChatPanel  # ⭐ 新規パネル
+from .code_editor import CodeEditor
+from .project_tree import ProjectTree
+#from .status_panel import StatusPanel
 
 logger = logging.getLogger(__name__)
 
 class MainWindow(QMainWindow):
-    """
-    メインウィンドウクラス
-    アプリケーションのメインUIを管理
-    """
+    """メインウィンドウクラス"""
     
-    # シグナル定義
-    window_closed = pyqtSignal()
-    
-    def __init__(self, app_components: Dict[str, Any]):
-        """
-        メインウィンドウを初期化
-        
-        Args:
-            app_components: アプリケーションコンポーネント辞書
-        """
+    def __init__(self, app_components):
         super().__init__()
         
-        # コンポーネントの設定
+        # アプリケーションコンポーネント
         self.config_manager = app_components['config_manager']
         self.event_bus = app_components['event_bus']
         self.plugin_manager = app_components['plugin_manager']
-        
-        # 設定の取得
-        self.config = self.config_manager.config
+        self.llm_client = app_components['llm_client']  # ⭐ LLMクライアント
         
         # UI初期化
         self.init_ui()
-        self.setup_menu()
-        self.setup_toolbar()
-        self.setup_statusbar()
+        self.setup_menus()
+        self.setup_toolbars()
+        self.setup_status_bar()
+        self.setup_connections()
         
-        # イベント接続
-        self.connect_events()
+        # ⭐ LLM関連の初期化
+        self.setup_llm_features()
         
         logger.info("メインウィンドウが初期化されました")
     
     def init_ui(self):
-        """UIを初期化"""
-        # ウィンドウ設定
-        app_config = self.config.get('app', {})
-        app_name = app_config.get('name', 'LLM Application')
-        self.setWindowTitle(app_name)
-        self.setGeometry(100, 100, 1200, 800)
+        """UI初期化"""
+        self.setWindowTitle("LLM Code Assistant")
+        self.setMinimumSize(1000, 700)
+        
+        # 設定から初期サイズを取得
+        config = self.config_manager.config
+        ui_config = config.get('ui', {}).get('window', {})
+        
+        width = ui_config.get('default_width', 1200)
+        height = ui_config.get('default_height', 800)
+        self.resize(width, height)
         
         # 中央ウィジェット
         central_widget = QWidget()
@@ -73,598 +65,247 @@ class MainWindow(QMainWindow):
         # メインレイアウト
         main_layout = QHBoxLayout(central_widget)
         
-        # スプリッター
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        main_layout.addWidget(splitter)
+        # スプリッター（左右分割）
+        main_splitter = QSplitter(Qt.Orientation.Horizontal)
+        main_layout.addWidget(main_splitter)
         
         # 左パネル（プロジェクトツリー）
-        self.setup_left_panel(splitter)
+        self.project_tree = ProjectTree()
+        main_splitter.addWidget(self.project_tree)
         
-        # 右パネル（メインエリア）
-        self.setup_right_panel(splitter)
+        # 右パネル（エディタ + LLMパネル）
+        right_splitter = QSplitter(Qt.Orientation.Vertical)
+        main_splitter.addWidget(right_splitter)
         
-        # スプリッターの比率設定
-        splitter.setSizes([300, 900])
+        # エディタタブ
+        self.editor_tabs = QTabWidget()
+        self.editor_tabs.setTabsClosable(True)
+        self.editor_tabs.tabCloseRequested.connect(self.close_tab)
+        right_splitter.addWidget(self.editor_tabs)
+        
+        # ⭐ LLMチャットパネル
+        self.llm_chat_panel = LLMChatPanel(self.llm_client)
+        right_splitter.addWidget(self.llm_chat_panel)
+        
+        # スプリッター比率設定
+        main_splitter.setSizes([250, 950])
+        right_splitter.setSizes([600, 400])
     
-    def setup_left_panel(self, parent):
-        """左パネルを設定"""
-        left_widget = QWidget()
-        left_layout = QVBoxLayout(left_widget)
-        
-        # プロジェクトツリー
-        self.project_tree = QTreeWidget()
-        self.project_tree.setHeaderLabel("プロジェクト")
-        
-        # サンプルアイテムを追加
-        root_item = QTreeWidgetItem(["プロジェクト1"])
-        child_item = QTreeWidgetItem(["ファイル1.txt"])
-        root_item.addChild(child_item)
-        self.project_tree.addTopLevelItem(root_item)
-        
-        left_layout.addWidget(self.project_tree)
-        parent.addWidget(left_widget)
+    def setup_llm_features(self):
+        """LLM機能の初期化"""
+        try:
+            # LLMクライアントの状態監視
+            self.llm_status_timer = QTimer()
+            self.llm_status_timer.timeout.connect(self.update_llm_status)
+            self.llm_status_timer.start(5000)  # 5秒間隔
+            
+            # 初期状態更新
+            self.update_llm_status()
+            
+            logger.info("LLM機能が初期化されました")
+            
+        except Exception as e:
+            logger.error(f"LLM機能の初期化に失敗しました: {e}")
     
-    def setup_right_panel(self, parent):
-        """右パネルを設定"""
-        right_widget = QWidget()
-        right_layout = QVBoxLayout(right_widget)
-        
-        # タブウィジェット
-        self.tab_widget = QTabWidget()
-        right_layout.addWidget(self.tab_widget)
-        
-        # チャットタブ
-        self.setup_chat_tab()
-        
-        parent.addWidget(right_widget)
+    def update_llm_status(self):
+        """LLMサービスの状態を更新"""
+        try:
+            if hasattr(self, 'llm_status_label'):
+                if self.llm_client.is_available():
+                    self.llm_status_label.setText("🟢 LLM: 利用可能")
+                    self.llm_status_label.setStyleSheet("color: green;")
+                else:
+                    self.llm_status_label.setText("🔴 LLM: 利用不可")
+                    self.llm_status_label.setStyleSheet("color: red;")
+        except Exception as e:
+            logger.error(f"LLM状態更新エラー: {e}")
     
-    def setup_chat_tab(self):
-        """チャットタブを設定"""
-        chat_widget = QWidget()
-        chat_layout = QVBoxLayout(chat_widget)
-        
-        # チャット表示エリア
-        self.chat_display = QTextEdit()
-        self.chat_display.setReadOnly(True)
-        self.chat_display.setPlaceholderText("チャットメッセージがここに表示されます...")
-        chat_layout.addWidget(self.chat_display)
-        
-        # 入力エリア
-        input_layout = QHBoxLayout()
-        self.chat_input = QLineEdit()
-        self.chat_input.setPlaceholderText("メッセージを入力してください...")
-        self.send_button = QPushButton("送信")
-        
-        input_layout.addWidget(self.chat_input)
-        input_layout.addWidget(self.send_button)
-        chat_layout.addLayout(input_layout)
-        
-        self.tab_widget.addTab(chat_widget, "チャット")
-        
-        # イベント接続
-        self.send_button.clicked.connect(self.send_message)
-        self.chat_input.returnPressed.connect(self.send_message)
-    
-    def setup_menu(self):
-        """メニューバーを設定"""
+    def setup_menus(self):
+        """メニューバー設定"""
         menubar = self.menuBar()
         
         # ファイルメニュー
         file_menu = menubar.addMenu('ファイル(&F)')
         
-        # 新規作成アクション
         new_action = QAction('新規作成(&N)', self)
         new_action.setShortcut('Ctrl+N')
-        new_action.setStatusTip('新しいファイルを作成します')
         new_action.triggered.connect(self.new_file)
         file_menu.addAction(new_action)
         
-        # 開くアクション
         open_action = QAction('開く(&O)', self)
         open_action.setShortcut('Ctrl+O')
-        open_action.setStatusTip('ファイルを開きます')
         open_action.triggered.connect(self.open_file)
         file_menu.addAction(open_action)
         
-        # 保存アクション
+        file_menu.addSeparator()
+        
         save_action = QAction('保存(&S)', self)
         save_action.setShortcut('Ctrl+S')
-        save_action.setStatusTip('ファイルを保存します')
         save_action.triggered.connect(self.save_file)
         file_menu.addAction(save_action)
         
-        file_menu.addSeparator()
+        # ⭐ LLMメニュー
+        llm_menu = menubar.addMenu('LLM(&L)')
         
-        # 終了アクション
-        exit_action = QAction('終了(&X)', self)
-        exit_action.setShortcut('Ctrl+Q')
-        exit_action.setStatusTip('アプリケーションを終了します')
-        exit_action.triggered.connect(self.close)
-        file_menu.addAction(exit_action)
+        generate_code_action = QAction('コード生成(&G)', self)
+        generate_code_action.setShortcut('Ctrl+G')
+        generate_code_action.triggered.connect(self.generate_code)
+        llm_menu.addAction(generate_code_action)
         
-        # 編集メニュー
-        edit_menu = menubar.addMenu('編集(&E)')
+        explain_code_action = QAction('コード説明(&E)', self)
+        explain_code_action.setShortcut('Ctrl+E')
+        explain_code_action.triggered.connect(self.explain_code)
+        llm_menu.addAction(explain_code_action)
         
-        # コピーアクション
-        copy_action = QAction('コピー(&C)', self)
-        copy_action.setShortcut('Ctrl+C')
-        copy_action.setStatusTip('選択したテキストをコピーします')
-        edit_menu.addAction(copy_action)
+        refactor_code_action = QAction('リファクタリング(&R)', self)
+        refactor_code_action.setShortcut('Ctrl+R')
+        refactor_code_action.triggered.connect(self.refactor_code)
+        llm_menu.addAction(refactor_code_action)
         
-        # 貼り付けアクション
-        paste_action = QAction('貼り付け(&V)', self)
-        paste_action.setShortcut('Ctrl+V')
-        paste_action.setStatusTip('クリップボードからテキストを貼り付けます')
-        edit_menu.addAction(paste_action)
+        llm_menu.addSeparator()
         
-        # ツールメニュー
-        tools_menu = menubar.addMenu('ツール(&T)')
-        
-        # 設定アクション
-        settings_action = QAction('設定(&S)', self)
-        settings_action.setStatusTip('アプリケーションの設定を開きます')
-        settings_action.triggered.connect(self.show_settings)
-        tools_menu.addAction(settings_action)
-        
-        # ヘルプメニュー
-        help_menu = menubar.addMenu('ヘルプ(&H)')
-        
-        # バージョン情報アクション
-        about_action = QAction('バージョン情報(&A)', self)
-        about_action.setStatusTip('アプリケーションの情報を表示します')
-        about_action.triggered.connect(self.show_about)
-        help_menu.addAction(about_action)
+        chat_panel_action = QAction('チャットパネル(&T)', self)
+        chat_panel_action.setShortcut('Ctrl+T')
+        chat_panel_action.triggered.connect(self.toggle_chat_panel)
+        llm_menu.addAction(chat_panel_action)
     
-    def setup_toolbar(self):
-        """ツールバーを設定"""
-        toolbar = self.addToolBar('メイン')
-        toolbar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextUnderIcon)
+    def setup_toolbars(self):
+        """ツールバー設定"""
+        # メインツールバー
+        main_toolbar = self.addToolBar('メイン')
         
-        # 新規作成ボタン
+        # ファイル操作
         new_action = QAction('新規', self)
-        new_action.setStatusTip('新しいファイルを作成します')
         new_action.triggered.connect(self.new_file)
-        toolbar.addAction(new_action)
+        main_toolbar.addAction(new_action)
         
-        # 開くボタン
         open_action = QAction('開く', self)
-        open_action.setStatusTip('ファイルを開きます')
         open_action.triggered.connect(self.open_file)
-        toolbar.addAction(open_action)
+        main_toolbar.addAction(open_action)
         
-        # 保存ボタン
         save_action = QAction('保存', self)
-        save_action.setStatusTip('ファイルを保存します')
         save_action.triggered.connect(self.save_file)
-        toolbar.addAction(save_action)
+        main_toolbar.addAction(save_action)
         
-        toolbar.addSeparator()
+        main_toolbar.addSeparator()
         
-        # 設定ボタン
-        settings_action = QAction('設定', self)
-        settings_action.setStatusTip('アプリケーションの設定を開きます')
-        settings_action.triggered.connect(self.show_settings)
-        toolbar.addAction(settings_action)
+        # ⭐ LLM操作
+        generate_action = QAction('生成', self)
+        generate_action.triggered.connect(self.generate_code)
+        main_toolbar.addAction(generate_action)
+        
+        explain_action = QAction('説明', self)
+        explain_action.triggered.connect(self.explain_code)
+        main_toolbar.addAction(explain_action)
     
-    def setup_statusbar(self):
-        """ステータスバーを設定"""
+    def setup_status_bar(self):
+        """ステータスバー設定"""
         status_bar = self.statusBar()
-        status_bar.showMessage('準備完了')
         
-        # 永続的なステータス表示
-        self.status_label = QLabel('準備完了')
-        status_bar.addPermanentWidget(self.status_label)
-    
-    def connect_events(self):
-        """イベントを接続"""
-        try:
-            # イベントバスからのイベントを購読
-            self.event_bus.subscribe('message_received', self.on_message_received)
-            self.event_bus.subscribe('status_update', self.on_status_update)
-            self.event_bus.subscribe('error_occurred', self.on_error_occurred)
-            
-            logger.info("イベントハンドラーが接続されました")
-            
-        except Exception as e:
-            logger.error(f"イベント接続中にエラーが発生しました: {e}")
-    
-    def send_message(self):
-        """メッセージを送信"""
-        message = self.chat_input.text().strip()
-        if not message:
-            return
+        # 基本情報
+        self.status_label = QLabel("準備完了")
+        status_bar.addWidget(self.status_label)
         
-        try:
-            # チャット表示に追加
-            self.chat_display.append(f"<b>ユーザー:</b> {message}")
-            
-            # 入力欄をクリア
-            self.chat_input.clear()
-            
-            # イベントを発行
-            self.event_bus.emit('message_sent', {
-                'message': message,
-                'timestamp': self.get_current_timestamp(),
-                'sender': 'user'
-            })
-            
-            # ステータス更新
-            self.update_status(f"メッセージを送信しました: {message[:30]}...")
-            
-            logger.info(f"メッセージを送信: {message}")
-            
-        except Exception as e:
-            logger.error(f"メッセージ送信中にエラーが発生しました: {e}")
-            self.show_error_message("メッセージの送信に失敗しました", str(e))
+        status_bar.addPermanentWidget(QLabel("|"))
+        
+        # ⭐ LLM状態表示
+        self.llm_status_label = QLabel("🔄 LLM: 確認中")
+        status_bar.addPermanentWidget(self.llm_status_label)
+        
+        status_bar.addPermanentWidget(QLabel("|"))
+        
+        # プログレスバー
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setVisible(False)
+        status_bar.addPermanentWidget(self.progress_bar)
     
-    def on_message_received(self, data: Dict[str, Any]):
-        """メッセージ受信時の処理"""
-        try:
-            message = data.get('message', '')
-            sender = data.get('sender', 'システム')
-            timestamp = data.get('timestamp', self.get_current_timestamp())
-            
-            # HTMLフォーマットでメッセージを表示
-            formatted_message = f"<b>{sender}:</b> {message} <i>({timestamp})</i>"
-            self.chat_display.append(formatted_message)
-            
-            # 自動スクロール
-            self.chat_display.verticalScrollBar().setValue(
-                self.chat_display.verticalScrollBar().maximum()
-            )
-            
-            logger.info(f"メッセージを受信: {sender} - {message}")
-            
-        except Exception as e:
-            logger.error(f"メッセージ受信処理中にエラーが発生しました: {e}")
+    def setup_connections(self):
+        """シグナル・スロット接続"""
+        # プロジェクトツリーからのファイル選択
+        self.project_tree.file_selected.connect(self.open_file_from_tree)
+        
+        # ⭐ LLMチャットパネルからの操作
+        if hasattr(self.llm_chat_panel, 'code_generated'):
+            self.llm_chat_panel.code_generated.connect(self.insert_generated_code)
     
-    def on_status_update(self, data: Dict[str, Any]):
-        """ステータス更新時の処理"""
-        try:
-            status = data.get('status', '')
-            self.update_status(status)
+    # ⭐ LLM関連メソッド
+    def generate_code(self):
+        """コード生成"""
+        current_editor = self.get_current_editor()
+        if current_editor:
+            selected_text = current_editor.textCursor().selectedText()
+            if selected_text:
+                prompt = f"Generate code based on: {selected_text}"
+            else:
+                prompt = "Generate a code example"
             
-        except Exception as e:
-            logger.error(f"ステータス更新中にエラーが発生しました: {e}")
+            self.llm_chat_panel.send_request(prompt, task_type='code_generation')
     
-    def on_error_occurred(self, data: Dict[str, Any]):
-        """エラー発生時の処理"""
-        try:
-            error_message = data.get('message', '不明なエラーが発生しました')
-            error_details = data.get('details', '')
-            
-            self.show_error_message(error_message, error_details)
-            self.update_status(f"エラー: {error_message}")
-            
-        except Exception as e:
-            logger.error(f"エラー処理中にエラーが発生しました: {e}")
+    def explain_code(self):
+        """コード説明"""
+        current_editor = self.get_current_editor()
+        if current_editor:
+            selected_text = current_editor.textCursor().selectedText()
+            if selected_text:
+                prompt = f"Explain this code: {selected_text}"
+                self.llm_chat_panel.send_request(prompt, task_type='code_explanation')
+            else:
+                QMessageBox.information(self, "情報", "説明するコードを選択してください。")
     
-    def update_status(self, message: str):
-        """ステータスを更新"""
-        self.statusBar().showMessage(message, 5000)  # 5秒間表示
-        if hasattr(self, 'status_label'):
-            self.status_label.setText(message)
+    def refactor_code(self):
+        """コードリファクタリング"""
+        current_editor = self.get_current_editor()
+        if current_editor:
+            selected_text = current_editor.textCursor().selectedText()
+            if selected_text:
+                prompt = f"Refactor this code: {selected_text}"
+                self.llm_chat_panel.send_request(prompt, task_type='refactoring')
+            else:
+                QMessageBox.information(self, "情報", "リファクタリングするコードを選択してください。")
     
-    def get_current_timestamp(self) -> str:
-        """現在のタイムスタンプを取得"""
-        from datetime import datetime
-        return datetime.now().strftime("%H:%M:%S")
+    def toggle_chat_panel(self):
+        """チャットパネルの表示切り替え"""
+        if self.llm_chat_panel.isVisible():
+            self.llm_chat_panel.hide()
+        else:
+            self.llm_chat_panel.show()
     
-    def show_error_message(self, title: str, message: str):
-        """エラーメッセージを表示"""
-        QMessageBox.critical(self, title, message)
+    def insert_generated_code(self, code):
+        """生成されたコードを挿入"""
+        current_editor = self.get_current_editor()
+        if current_editor:
+            cursor = current_editor.textCursor()
+            cursor.insertText(code)
     
-    def show_info_message(self, title: str, message: str):
-        """情報メッセージを表示"""
-        QMessageBox.information(self, title, message)
+    def get_current_editor(self):
+        """現在のエディタを取得"""
+        current_tab = self.editor_tabs.currentWidget()
+        if isinstance(current_tab, CodeEditor):
+            return current_tab
+        return None
     
+    # 既存のメソッド（簡略化）
     def new_file(self):
         """新規ファイル作成"""
-        try:
-            logger.info("新規ファイル作成")
-            
-            # イベント発行
-            self.event_bus.emit('file_action', {
-                'action': 'new',
-                'timestamp': self.get_current_timestamp()
-            })
-            
-            self.update_status("新規ファイルを作成しました")
-            
-        except Exception as e:
-            logger.error(f"新規ファイル作成中にエラーが発生しました: {e}")
-            self.show_error_message("新規ファイル作成エラー", str(e))
+        editor = CodeEditor()
+        index = self.editor_tabs.addTab(editor, "新規ファイル")
+        self.editor_tabs.setCurrentIndex(index)
     
     def open_file(self):
         """ファイルを開く"""
-        try:
-            from PyQt6.QtWidgets import QFileDialog
-            
-            file_path, _ = QFileDialog.getOpenFileName(
-                self,
-                "ファイルを開く",
-                "",
-                "テキストファイル (*.txt);;すべてのファイル (*)"
-            )
-            
-            if file_path:
-                # ファイル存在確認
-                if not os.path.exists(file_path):
-                    self.show_error_message("ファイルエラー", "指定されたファイルが見つかりません。")
-                    return
-                
-                try:
-                    # ファイル読み込み
-                    with open(file_path, 'r', encoding='utf-8') as file:
-                        content = file.read()
-                    
-                    # コンテンツを表示エリアに設定
-                    self.set_content_from_file(content, file_path)
-                    
-                    logger.info(f"ファイルを開く: {file_path}")
-                    
-                    # イベント発行
-                    self.event_bus.emit('file_action', {
-                        'action': 'open',
-                        'file_path': file_path,
-                        'timestamp': self.get_current_timestamp(),
-                        'success': True
-                    })
-                    
-                    self.update_status(f"ファイルを開きました: {Path(file_path).name}")
-                    self.show_info_message("ファイルを開く", f"ファイルを開きました:\n{file_path}")
-                    
-                except PermissionError:
-                    error_msg = "ファイルへの読み取り権限がありません。"
-                    logger.error(f"ファイル読み込みエラー (権限): {file_path}")
-                    self.show_error_message("読み込みエラー", error_msg)
-                    
-                except UnicodeDecodeError:
-                    error_msg = "ファイルの文字エンコーディングが対応していません。"
-                    logger.error(f"ファイル読み込みエラー (エンコーディング): {file_path}")
-                    self.show_error_message("読み込みエラー", error_msg)
-                    
-                except Exception as e:
-                    error_msg = f"ファイル読み込み中にエラーが発生しました: {str(e)}"
-                    logger.error(f"ファイル読み込みエラー: {file_path} - {e}")
-                    self.show_error_message("読み込みエラー", error_msg)
-            
-        except Exception as e:
-            logger.error(f"ファイルを開く処理中にエラーが発生しました: {e}")
-            self.show_error_message("ファイルオープンエラー", str(e))
-
+        # ファイルダイアログの実装
+        pass
+    
+    def open_file_from_tree(self, file_path):
+        """プロジェクトツリーからファイルを開く"""
+        # ファイル読み込みの実装
+        pass
+    
     def save_file(self):
-        """ファイルを保存"""
-        try:
-            from PyQt6.QtWidgets import QFileDialog
-            
-            # 保存するコンテンツを取得（チャット内容を例として使用）
-            content_to_save = self.get_content_to_save()
-            
-            if not content_to_save.strip():
-                self.show_info_message("保存", "保存するコンテンツがありません。")
-                return
-            
-            file_path, _ = QFileDialog.getSaveFileName(
-                self,
-                "ファイルを保存",
-                "",
-                "テキストファイル (*.txt);;すべてのファイル (*)"
-            )
-            if file_path:
-                # ファイル保存の確認
-                if os.path.exists(file_path):
-                    reply = QMessageBox.question(
-                        self,
-                        '上書き確認',
-                        f'ファイル "{os.path.basename(file_path)}" は既に存在します。\n上書きしますか？',
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                        QMessageBox.StandardButton.No
-                    )
-                    
-                    if reply != QMessageBox.StandardButton.Yes:
-                        self.update_status("保存をキャンセルしました")
-                        return
-                
-                # 実際のファイル保存処理
-                try:
-                    with open(file_path, 'w', encoding='utf-8') as file:
-                        file.write(content_to_save)
-                    
-                    logger.info(f"ファイルを保存: {file_path}")
-                    
-                    # イベント発行
-                    self.event_bus.emit('file_action', {
-                        'action': 'save',
-                        'file_path': file_path,
-                        'timestamp': self.get_current_timestamp(),
-                        'success': True
-                    })
-                    
-                    self.update_status(f"ファイルを保存しました: {Path(file_path).name}")
-                    self.show_info_message("保存完了", f"ファイルを保存しました:\n{file_path}")
-                    
-                except PermissionError:
-                    error_msg = "ファイルへの書き込み権限がありません。"
-                    logger.error(f"ファイル保存エラー (権限): {file_path}")
-                    self.show_error_message("保存エラー", error_msg)
-                    self.update_status("保存に失敗しました（権限エラー）")
-                    
-                except OSError as e:
-                    error_msg = f"ファイル保存中にエラーが発生しました: {str(e)}"
-                    logger.error(f"ファイル保存エラー (OS): {file_path} - {e}")
-                    self.show_error_message("保存エラー", error_msg)
-                    self.update_status("保存に失敗しました（OSエラー）")
-                    
-                except Exception as e:
-                    error_msg = f"予期しないエラーが発生しました: {str(e)}"
-                    logger.error(f"ファイル保存エラー (予期しない): {file_path} - {e}")
-                    self.show_error_message("保存エラー", error_msg)
-                    self.update_status("保存に失敗しました")
-            
-        except Exception as e:
-            logger.error(f"ファイル保存処理中にエラーが発生しました: {e}")
-            self.show_error_message("ファイル保存エラー", str(e))
-
-    def get_content_to_save(self) -> str:
-        """保存するコンテンツを取得"""
-        try:
-            # チャット内容を取得
-            chat_content = self.chat_display.toPlainText()
-            
-            if chat_content.strip():
-                return chat_content
-            
-            # チャット内容がない場合、デフォルトコンテンツを返す
-            return f"""# LLM Application - 保存ファイル
-    作成日時: {self.get_current_timestamp()}
-
-    このファイルはLLM Applicationから保存されました。
-    """
-            
-        except Exception as e:
-            logger.error(f"保存コンテンツ取得中にエラーが発生しました: {e}")
-            return f"エラー: コンテンツの取得に失敗しました - {str(e)}"
+        """ファイル保存"""
+        # ファイル保存の実装
+        pass
     
-    def set_content_from_file(self, content: str, file_path: str):
-        """ファイルから読み込んだコンテンツを設定"""
-        try:
-            # チャット表示エリアに内容を設定
-            self.chat_display.clear()
-            self.chat_display.append(f"<b>ファイル読み込み:</b> {Path(file_path).name}")
-            self.chat_display.append("<hr>")
-            
-            # ファイル内容を表示（HTMLエスケープして表示）
-            escaped_content = content.replace('<', '&lt;').replace('>', '&gt;')
-            self.chat_display.append(f"<pre>{escaped_content}</pre>")
-            
-            # 自動スクロール
-            self.chat_display.verticalScrollBar().setValue(
-                self.chat_display.verticalScrollBar().maximum()
-            )
-            
-        except Exception as e:
-            logger.error(f"コンテンツ設定中にエラーが発生しました: {e}")
-            self.chat_display.append(f"<b>エラー:</b> コンテンツの表示に失敗しました - {str(e)}")
-
-    def new_file(self):
-        """新規ファイル作成"""
-        try:
-            logger.info("新規ファイル作成")
-            
-            # 確認ダイアログ
-            reply = QMessageBox.question(
-                self,
-                '新規作成',
-                '新しいファイルを作成しますか？\n現在の内容はクリアされます。',
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
-            )
-            
-            if reply == QMessageBox.StandardButton.Yes:
-                # チャット表示をクリア
-                self.chat_display.clear()
-                self.chat_display.append("<b>新規ファイル:</b> 新しいファイルが作成されました")
-                
-                # イベント発行
-                self.event_bus.emit('file_action', {
-                    'action': 'new',
-                    'timestamp': self.get_current_timestamp(),
-                    'success': True
-                })
-                
-                self.update_status("新規ファイルを作成しました")
-                
-        except Exception as e:
-            logger.error(f"新規ファイル作成中にエラーが発生しました: {e}")
-            self.show_error_message("新規ファイル作成エラー", str(e))
-
-    def show_settings(self):
-        """設定画面を表示"""
-        try:
-            logger.info("設定画面を表示")
-            
-            # 簡単な設定ダイアログ
-            from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
-            
-            dialog = QDialog(self)
-            dialog.setWindowTitle("設定")
-            dialog.setModal(True)
-            dialog.resize(400, 300)
-            
-            layout = QVBoxLayout(dialog)
-            layout.addWidget(QLabel("設定画面（開発中）"))
-            
-            close_button = QPushButton("閉じる")
-            close_button.clicked.connect(dialog.accept)
-            layout.addWidget(close_button)
-            
-            dialog.exec()
-            
-            self.update_status("設定画面を表示しました")
-            
-        except Exception as e:
-            logger.error(f"設定画面表示中にエラーが発生しました: {e}")
-            self.show_error_message("設定画面エラー", str(e))
-    
-    def show_about(self):
-        """バージョン情報を表示"""
-        try:
-            app_config = self.config.get('app', {})
-            app_name = app_config.get('name', 'LLM Application')
-            version = app_config.get('version', '1.0.0')
-            description = app_config.get('description', 'LLMアプリケーション')
-            
-            about_text = f"""
-            <h2>{app_name}</h2>
-            <p><b>バージョン:</b> {version}</p>
-            <p><b>説明:</b> {description}</p>
-            <p><b>開発:</b> LLM Development Team</p>
-            <hr>
-            <p>このアプリケーションはPyQt6を使用して開発されています。</p>
-            """
-            
-            QMessageBox.about(self, 'バージョン情報', about_text)
-            
-            logger.info("バージョン情報を表示しました")
-            
-        except Exception as e:
-            logger.error(f"バージョン情報表示中にエラーが発生しました: {e}")
-            self.show_error_message("バージョン情報エラー", str(e))
-    
-    def closeEvent(self, event):
-        """ウィンドウクローズイベント"""
-        try:
-            logger.info("メインウィンドウを閉じています...")
-            
-            # 確認ダイアログ
-            reply = QMessageBox.question(
-                self,
-                '終了確認',
-                'アプリケーションを終了しますか？',
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
-            )
-            
-            if reply == QMessageBox.StandardButton.Yes:
-                # シグナル発行
-                self.window_closed.emit()
-                
-                # イベントバスのクリーンアップ
-                if hasattr(self, 'event_bus'):
-                    self.event_bus.emit('application_closing', {
-                        'timestamp': self.get_current_timestamp()
-                    })
-                
-                # プラグインマネージャーのクリーンアップ
-                if hasattr(self, 'plugin_manager'):
-                    self.plugin_manager.cleanup()
-                
-                event.accept()
-                logger.info("メインウィンドウが閉じられました")
-            else:
-                event.ignore()
-                
-        except Exception as e:
-            logger.error(f"ウィンドウクローズ処理中にエラーが発生しました: {e}")
-            event.accept()  # エラーが発生してもウィンドウを閉じる
+    def close_tab(self, index):
+        """タブを閉じる"""
+        self.editor_tabs.removeTab(index)

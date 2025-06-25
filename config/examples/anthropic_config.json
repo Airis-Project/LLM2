@@ -1,0 +1,45 @@
+{
+  "version": "1.0.0",
+  "application": {
+    "name": "LLM Chat System - Anthropic Configuration",
+    "debug": false,
+    "log_level": "INFO"
+  },
+  "llm": {
+    "default_provider": "anthropic",
+    "timeout": 30,
+    "max_retries": 3,
+    "providers": {
+      "anthropic": {
+        "enabled": true,
+        "api_key": "${ANTHROPIC_API_KEY}",
+        "base_url": "https://api.anthropic.com",
+        "models": {
+          "default": "claude-3-sonnet-20240229",
+          "available": [
+            "claude-3-haiku-20240307",
+            "claude-3-sonnet-20240229",
+            "claude-3-opus-20240229"
+          ]
+        },
+        "parameters": {
+          "temperature": 0.7,
+          "max_tokens": 2000,
+          "top_p": 1.0
+        }
+      }
+    }
+  },
+  "ui": {
+    "default_interface": "cli",
+    "cli": {
+      "prompt_style": "colorful",
+      "show_timestamps": true
+    }
+  },
+  "logging": {
+    "level": "INFO",
+    "console_output": true,
+    "file_output": true
+  }
+}

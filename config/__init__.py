@@ -1,367 +1,337 @@
-# config/__init__.py
+# scripts/init.py
 """
-# config/__init__.py
-# 設定パッケージ - LLM Code Assistant
-
-このパッケージは設定管理機能を提供します：
-- デフォルト設定の読み込み
-- ログ設定の管理
-- 設定ファイルのバリデーション
-- 環境変数との統合
+LLM Chat System Initialization Script
+システムの初期化とセットアップを行うスクリプト
 """
 
-import json
 import os
-import yaml
+import sys
+import json
+import shutil
 from pathlib import Path
-from typing import Dict, Any, Optional, Union
-from dataclasses import dataclass
+from typing import Dict, Any, Optional
 
-# パッケージ情報
-__version__ = "1.0.0"
-__author__ = "LLM Code Assistant Team"
+# プロジェクトルートをパスに追加
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-# 設定ディレクトリのパス
-CONFIG_DIR = Path(__file__).parent
-PROJECT_ROOT = CONFIG_DIR.parent
+from src.core.logger import setup_logger
+from src.core.config_manager import ConfigManager
+from src.core.config_validator import ConfigValidator
 
-# 設定ファイルのパス
-DEFAULT_SETTINGS_FILE = CONFIG_DIR / "default_settings.json"
-LOGGING_CONFIG_FILE = CONFIG_DIR / "logging_config.yaml"
-USER_SETTINGS_FILE = CONFIG_DIR / "user_settings.json"
 
-@dataclass
-class ConfigPaths:
-    """設定ファイルのパス情報"""
-    config_dir: Path = CONFIG_DIR
-    default_settings: Path = DEFAULT_SETTINGS_FILE
-    logging_config: Path = LOGGING_CONFIG_FILE
-    user_settings: Path = USER_SETTINGS_FILE
-    project_root: Path = PROJECT_ROOT
-
-def load_default_settings() -> Dict[str, Any]:
-    """
-    デフォルト設定を読み込み
+class SystemInitializer:
+    """システム初期化クラス"""
     
-    Returns:
-        Dict[str, Any]: デフォルト設定辞書
+    def __init__(self):
+        self.project_root = Path(__file__).parent.parent
+        self.logger = setup_logger("SystemInitializer")
         
-    Raises:
-        FileNotFoundError: 設定ファイルが見つからない場合
-        json.JSONDecodeError: JSONの解析に失敗した場合
-    """
-    try:
-        if not DEFAULT_SETTINGS_FILE.exists():
-            raise FileNotFoundError(f"デフォルト設定ファイルが見つかりません: {DEFAULT_SETTINGS_FILE}")
-        
-        with open(DEFAULT_SETTINGS_FILE, 'r', encoding='utf-8') as f:
-            settings = json.load(f)
-        
-        return settings
-        
-    except json.JSONDecodeError as e:
-        raise json.JSONDecodeError(f"デフォルト設定ファイルの解析に失敗しました: {e}")
-    except Exception as e:
-        raise Exception(f"デフォルト設定の読み込みに失敗しました: {e}")
-
-def load_logging_config() -> Dict[str, Any]:
-    """
-    ログ設定を読み込み
-    
-    Returns:
-        Dict[str, Any]: ログ設定辞書
-        
-    Raises:
-        FileNotFoundError: 設定ファイルが見つからない場合
-        yaml.YAMLError: YAMLの解析に失敗した場合
-    """
-    try:
-        if not LOGGING_CONFIG_FILE.exists():
-            raise FileNotFoundError(f"ログ設定ファイルが見つかりません: {LOGGING_CONFIG_FILE}")
-        
-        with open(LOGGING_CONFIG_FILE, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f)
-        
-        return config
-        
-    except yaml.YAMLError as e:
-        raise yaml.YAMLError(f"ログ設定ファイルの解析に失敗しました: {e}")
-    except Exception as e:
-        raise Exception(f"ログ設定の読み込みに失敗しました: {e}")
-
-def load_user_settings() -> Dict[str, Any]:
-    """
-    ユーザー設定を読み込み（存在しない場合は空辞書を返す）
-    
-    Returns:
-        Dict[str, Any]: ユーザー設定辞書
-    """
-    try:
-        if not USER_SETTINGS_FILE.exists():
-            return {}
-        
-        with open(USER_SETTINGS_FILE, 'r', encoding='utf-8') as f:
-            settings = json.load(f)
-        
-        return settings
-        
-    except (json.JSONDecodeError, Exception):
-        # ユーザー設定の読み込みに失敗した場合は空辞書を返す
-        return {}
-
-def save_user_settings(settings: Dict[str, Any]) -> bool:
-    """
-    ユーザー設定を保存
-    
-    Args:
-        settings: 保存する設定辞書
-        
-    Returns:
-        bool: 保存成功フラグ
-    """
-    try:
-        # ディレクトリが存在しない場合は作成
-        USER_SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-        
-        with open(USER_SETTINGS_FILE, 'w', encoding='utf-8') as f:
-            json.dump(settings, f, indent=2, ensure_ascii=False)
-        
-        return True
-        
-    except Exception as e:
-        print(f"ユーザー設定の保存に失敗しました: {e}")
-        return False
-
-def merge_settings(*settings_dicts: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    複数の設定辞書をマージ（後の辞書が優先）
-    
-    Args:
-        *settings_dicts: マージする設定辞書
-        
-    Returns:
-        Dict[str, Any]: マージされた設定辞書
-    """
-    def deep_merge(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
-        """深い階層まで辞書をマージ"""
-        result = base.copy()
-        
-        for key, value in override.items():
-            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
-                result[key] = deep_merge(result[key], value)
-            else:
-                result[key] = value
-        
-        return result
-    
-    if not settings_dicts:
-        return {}
-    
-    result = settings_dicts[0].copy()
-    for settings in settings_dicts[1:]:
-        result = deep_merge(result, settings)
-    
-    return result
-
-def validate_settings(settings: Dict[str, Any]) -> bool:
-    """
-    設定の基本的なバリデーション
-    
-    Args:
-        settings: 検証する設定辞書
-        
-    Returns:
-        bool: 設定が有効な場合True
-    """
-    try:
-        # 必須セクションの確認
-        required_sections = ['application', 'ui', 'llm', 'logging']
-        for section in required_sections:
-            if section not in settings:
-                return False
-        
-        # アプリケーション設定の確認
-        app_config = settings.get('application', {})
-        if not app_config.get('name') or not app_config.get('version'):
+    def initialize(self, force: bool = False) -> bool:
+        """システムを初期化"""
+        try:
+            self.logger.info("Starting system initialization...")
+            
+            # 1. ディレクトリ構造の作成
+            self._create_directories()
+            
+            # 2. 設定ファイルの初期化
+            self._initialize_config(force)
+            
+            # 3. 環境ファイルの作成
+            self._create_env_file(force)
+            
+            # 4. ログディレクトリの準備
+            self._prepare_logging()
+            
+            # 5. データディレクトリの準備
+            self._prepare_data_directories()
+            
+            # 6. 権限の設定
+            self._set_permissions()
+            
+            self.logger.info("System initialization completed successfully!")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"System initialization failed: {e}")
             return False
-        
-        # LLM設定の確認
-        llm_config = settings.get('llm', {})
-        if 'providers' not in llm_config:
-            return False
-        
-        return True
-        
-    except Exception:
-        return False
-
-def get_config_info() -> Dict[str, Any]:
-    """
-    設定パッケージの情報を取得
     
-    Returns:
-        Dict[str, Any]: パッケージ情報
-    """
-    return {
-        'version': __version__,
-        'author': __author__,
-        'config_dir': str(CONFIG_DIR),
-        'files': {
-            'default_settings': str(DEFAULT_SETTINGS_FILE),
-            'logging_config': str(LOGGING_CONFIG_FILE),
-            'user_settings': str(USER_SETTINGS_FILE)
-        },
-        'file_exists': {
-            'default_settings': DEFAULT_SETTINGS_FILE.exists(),
-            'logging_config': LOGGING_CONFIG_FILE.exists(),
-            'user_settings': USER_SETTINGS_FILE.exists()
-        }
-    }
-
-def create_default_user_settings() -> Dict[str, Any]:
-    """
-    デフォルトのユーザー設定を作成
-    
-    Returns:
-        Dict[str, Any]: デフォルトユーザー設定
-    """
-    return {
-        'ui': {
-            'theme': {
-                'current': 'dark'
-            },
-            'window': {
-                'width': 1200,
-                'height': 800,
-                'maximized': False,
-                'position': {
-                    'x': 100,
-                    'y': 100
-                }
-            },
-            'editor': {
-                'font_size': 12,
-                'tab_width': 4,
-                'show_line_numbers': True
-            }
-        },
-        'llm': {
-            'default_provider': 'openai',
-            'last_used_model': 'gpt-4'
-        },
-        'project': {
-            'recent_projects': [],
-            'last_opened_project': None
-        },
-        'preferences': {
-            'auto_save': True,
-            'auto_backup': True,
-            'check_updates': True
-        }
-    }
-
-def ensure_config_directories():
-    """必要な設定ディレクトリを作成"""
-    try:
-        # 基本ディレクトリ
+    def _create_directories(self):
+        """必要なディレクトリを作成"""
         directories = [
-            CONFIG_DIR,
-            PROJECT_ROOT / 'logs',
-            PROJECT_ROOT / 'data',
-            PROJECT_ROOT / 'cache',
-            PROJECT_ROOT / 'temp',
-            PROJECT_ROOT / 'backups',
-            PROJECT_ROOT / 'user_data'
+            "config",
+            "config/backup",
+            "config/examples",
+            "logs",
+            "data",
+            "data/chat_history",
+            "data/sessions",
+            "temp",
+            "cache",
+            "scripts",
+            "tests",
+            "docs"
         ]
         
-        for directory in directories:
-            directory.mkdir(parents=True, exist_ok=True)
-        
-        return True
-        
-    except Exception as e:
-        print(f"設定ディレクトリの作成に失敗しました: {e}")
-        return False
-
-# エクスポートする要素
-__all__ = [
-    # パス情報
-    'CONFIG_DIR',
-    'PROJECT_ROOT',
-    'DEFAULT_SETTINGS_FILE',
-    'LOGGING_CONFIG_FILE',
-    'USER_SETTINGS_FILE',
-    'ConfigPaths',
+        for dir_path in directories:
+            full_path = self.project_root / dir_path
+            full_path.mkdir(parents=True, exist_ok=True)
+            self.logger.debug(f"Created directory: {full_path}")
     
-    # 設定読み込み関数
-    'load_default_settings',
-    'load_logging_config',
-    'load_user_settings',
-    'save_user_settings',
+    def _initialize_config(self, force: bool = False):
+        """設定ファイルを初期化"""
+        config_path = self.project_root / "config" / "default_config.json"
+        
+        if config_path.exists() and not force:
+            self.logger.info("Configuration file already exists, skipping...")
+            return
+        
+        # デフォルト設定の作成
+        default_config = self._get_default_config()
+        
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(default_config, f, indent=2, ensure_ascii=False)
+        
+        self.logger.info(f"Created default configuration: {config_path}")
+        
+        # 設定の検証
+        try:
+            validator = ConfigValidator()
+            validator.validate_config(default_config)
+            self.logger.info("Configuration validation passed")
+        except Exception as e:
+            self.logger.warning(f"Configuration validation failed: {e}")
     
-    # ユーティリティ関数
-    'merge_settings',
-    'validate_settings',
-    'get_config_info',
-    'create_default_user_settings',
-    'ensure_config_directories',
+    def _create_env_file(self, force: bool = False):
+        """環境ファイルを作成"""
+        env_path = self.project_root / ".env"
+        env_example_path = self.project_root / ".env.example"
+        
+        # .env.exampleが存在し、.envが存在しない場合のみ作成
+        if env_example_path.exists() and (not env_path.exists() or force):
+            shutil.copy2(env_example_path, env_path)
+            self.logger.info("Created .env file from .env.example")
+            self.logger.warning("Please edit .env file with your actual API keys!")
     
-    # バージョン情報
-    '__version__',
-    '__author__'
-]
-
-# パッケージ初期化処理
-def _initialize_config_package():
-    """設定パッケージの初期化"""
-    try:
-        # 必要なディレクトリを作成
-        ensure_config_directories()
+    def _prepare_logging(self):
+        """ログシステムの準備"""
+        log_dir = self.project_root / "logs"
+        log_dir.mkdir(exist_ok=True)
         
-        # ユーザー設定ファイルが存在しない場合は作成
-        if not USER_SETTINGS_FILE.exists():
-            default_user_settings = create_default_user_settings()
-            save_user_settings(default_user_settings)
+        # ログファイルの初期化
+        log_file = log_dir / "llm_chat.log"
+        if not log_file.exists():
+            log_file.touch()
         
-        return True
+        self.logger.info("Logging system prepared")
+    
+    def _prepare_data_directories(self):
+        """データディレクトリの準備"""
+        data_dirs = [
+            "data/chat_history",
+            "data/sessions",
+            "data/exports",
+            "data/imports"
+        ]
         
-    except Exception as e:
-        print(f"設定パッケージの初期化に失敗しました: {e}")
-        return False
+        for dir_path in data_dirs:
+            full_path = self.project_root / dir_path
+            full_path.mkdir(parents=True, exist_ok=True)
+            
+            # README.mdを作成
+            readme_path = full_path / "README.md"
+            if not readme_path.exists():
+                readme_content = f"# {dir_path.replace('/', ' ').title()}\n\nThis directory is used for {dir_path.split('/')[-1]}.\n"
+                with open(readme_path, 'w', encoding='utf-8') as f:
+                    f.write(readme_content)
+    
+    def _set_permissions(self):
+        """ファイル権限の設定"""
+        try:
+            # Unixライクシステムでのみ実行
+            if os.name == 'posix':
+                # 実行可能ファイルの権限設定
+                executable_files = [
+                    "main.py",
+                    "scripts/init.py",
+                    "scripts/start.py"
+                ]
+                
+                for file_path in executable_files:
+                    full_path = self.project_root / file_path
+                    if full_path.exists():
+                        os.chmod(full_path, 0o755)
+                        self.logger.debug(f"Set executable permission: {full_path}")
+                
+        except Exception as e:
+            self.logger.warning(f"Failed to set permissions: {e}")
+    
+    def _get_default_config(self) -> Dict[str, Any]:
+        """デフォルト設定を取得"""
+        return {
+            "version": "1.0.0",
+            "application": {
+                "name": "LLM Chat System",
+                "debug": False,
+                "log_level": "INFO",
+                "auto_save": True,
+                "session_timeout": 3600
+            },
+            "llm": {
+                "default_provider": "openai",
+                "timeout": 30,
+                "max_retries": 3,
+                "retry_delay": 1.0,
+                "providers": {
+                    "openai": {
+                        "enabled": True,
+                        "api_key": "${OPENAI_API_KEY}",
+                        "organization": "${OPENAI_ORG_ID}",
+                        "base_url": "https://api.openai.com/v1",
+                        "models": {
+                            "default": "gpt-3.5-turbo",
+                            "available": [
+                                "gpt-3.5-turbo",
+                                "gpt-3.5-turbo-16k",
+                                "gpt-4",
+                                "gpt-4-turbo-preview"
+                            ]
+                        },
+                        "parameters": {
+                            "temperature": 0.7,
+                            "max_tokens": 2000,
+                            "top_p": 1.0,
+                            "frequency_penalty": 0.0,
+                            "presence_penalty": 0.0
+                        }
+                    }
+                }
+            },
+            "ui": {
+                "default_interface": "cli",
+                "cli": {
+                    "prompt_style": "colorful",
+                    "show_timestamps": True,
+                    "auto_complete": True,
+                    "history_size": 1000
+                }
+            },
+            "logging": {
+                "level": "INFO",
+                "file_path": "logs/llm_chat.log",
+                "max_file_size": "10MB",
+                "backup_count": 5,
+                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                "console_output": True,
+                "file_output": True
+            },
+            "storage": {
+                "chat_history": {
+                    "enabled": True,
+                    "max_sessions": 100,
+                    "auto_save_interval": 300,
+                    "storage_path": "data/chat_history"
+                }
+            },
+            "security": {
+                "api_key_validation": True,
+                "rate_limiting": {
+                    "enabled": True,
+                    "requests_per_minute": 60,
+                    "burst_limit": 10
+                },
+                "input_sanitization": True
+            }
+        }
+    
+    def check_system_status(self) -> Dict[str, Any]:
+        """システム状態をチェック"""
+        status = {
+            "directories": {},
+            "configuration": {},
+            "dependencies": {},
+            "environment": {}
+        }
+        
+        # ディレクトリチェック
+        required_dirs = ["config", "logs", "data", "src"]
+        for dir_name in required_dirs:
+            dir_path = self.project_root / dir_name
+            status["directories"][dir_name] = dir_path.exists()
+        
+        # 設定ファイルチェック
+        config_files = [
+            "config/default_config.json",
+            "config/schema.json",
+            ".env"
+        ]
+        for config_file in config_files:
+            file_path = self.project_root / config_file
+            status["configuration"][config_file] = file_path.exists()
+        
+        # 環境変数チェック
+        env_vars = ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"]
+        for env_var in env_vars:
+            status["environment"][env_var] = bool(os.getenv(env_var))
+        
+        return status
 
-# パッケージ読み込み時に初期化実行
-_initialize_config_package()
 
-# デバッグ情報の出力（スクリプト実行時のみ）
+def main():
+    """メイン関数"""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="LLM Chat System Initializer")
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force initialization (overwrite existing files)"
+    )
+    parser.add_argument(
+        "--check", "-c",
+        action="store_true",
+        help="Check system status only"
+    )
+    
+    args = parser.parse_args()
+    
+    initializer = SystemInitializer()
+    
+    if args.check:
+        # システム状態チェック
+        status = initializer.check_system_status()
+        
+        print("\n🔍 System Status Check")
+        print("=" * 50)
+        
+        for category, items in status.items():
+            print(f"\n📁 {category.title()}:")
+            for item, exists in items.items():
+                icon = "✅" if exists else "❌"
+                print(f"  {icon} {item}")
+        
+        return
+    
+    # システム初期化
+    print("\n🚀 LLM Chat System Initializer")
+    print("=" * 50)
+    
+    if args.force:
+        print("⚠️  Force mode enabled - existing files will be overwritten")
+    
+    success = initializer.initialize(force=args.force)
+    
+    if success:
+        print("\n✅ System initialization completed successfully!")
+        print("\n📝 Next steps:")
+        print("1. Edit .env file with your API keys")
+        print("2. Review config/default_config.json")
+        print("3. Run: python main.py")
+    else:
+        print("\n❌ System initialization failed!")
+        sys.exit(1)
+
+
 if __name__ == "__main__":
-    print("=== LLM Code Assistant 設定パッケージ ===")
-    print(f"バージョン: {__version__}")
-    print(f"作成者: {__author__}")
-    
-    # 設定情報の表示
-    info = get_config_info()
-    print(f"\n設定ディレクトリ: {info['config_dir']}")
-    
-    print("\n設定ファイル:")
-    for name, path in info['files'].items():
-        exists = "✓" if info['file_exists'][name] else "✗"
-        print(f"  {exists} {name}: {path}")
-    
-    # 設定の読み込みテスト
-    try:
-        default_settings = load_default_settings()
-        print(f"\nデフォルト設定読み込み: ✓ ({len(default_settings)} セクション)")
-    except Exception as e:
-        print(f"\nデフォルト設定読み込み: ✗ ({e})")
-    
-    try:
-        logging_config = load_logging_config()
-        print(f"ログ設定読み込み: ✓ (バージョン {logging_config.get('version', 'N/A')})")
-    except Exception as e:
-        print(f"ログ設定読み込み: ✗ ({e})")
-    
-    try:
-        user_settings = load_user_settings()
-        print(f"ユーザー設定読み込み: ✓ ({len(user_settings)} 項目)")
-    except Exception as e:
-        print(f"ユーザー設定読み込み: ✗ ({e})")
+    main()

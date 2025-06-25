@@ -1,0 +1,116 @@
+# .github/workflows/tests.yml
+name: Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: [3.8, 3.9, '3.10', 3.11]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 black bandit
+    
+    - name: Initialize system
+      run: |
+        python scripts/init.py --force
+    
+    - name: Run linting
+      run: |
+        flake8 src/ tests/ scripts/ --max-line-length=88 --extend-ignore=E203,W503
+        black --check src/ tests/ scripts/
+    
+    - name: Run security tests
+      run: |
+        bandit -r src/ -f json
+    
+    - name: Run unit tests
+      run: |
+        python -m pytest tests/ -v -m "not integration and not slow" --cov=src --cov-report=xml
+    
+    - name: Run integration tests
+      run: |
+        python -m pytest tests/test_integration.py -v -m integration
+    
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+
+  api-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest
+    
+    - name: Initialize system
+      run: |
+        python scripts/init.py --force
+    
+    - name: Run API tests
+      env:
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      run: |
+        python -m pytest tests/ -v -m requires_api_key
+      continue-on-error: true
+
+  performance-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest psutil
+    
+    - name: Initialize system
+      run: |
+        python scripts/init.py --force
+    
+    - name: Run performance tests
+      run: |
+        python -m pytest tests/ -v -m slow --tb=short
+      timeout-minutes: 30

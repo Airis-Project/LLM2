@@ -1,0 +1,336 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LLM Chat System Configuration Schema",
+  "type": "object",
+  "required": ["version", "application", "llm"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Configuration version"
+    },
+    "application": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "debug": {
+          "type": "boolean",
+          "default": false
+        },
+        "log_level": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+          "default": "INFO"
+        },
+        "auto_save": {
+          "type": "boolean",
+          "default": true
+        },
+        "session_timeout": {
+          "type": "integer",
+          "minimum": 60,
+          "default": 3600
+        }
+      }
+    },
+    "llm": {
+      "type": "object",
+      "required": ["default_provider", "providers"],
+      "properties": {
+        "default_provider": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeout": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 300,
+          "default": 30
+        },
+        "max_retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3
+        },
+        "retry_delay": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 10.0,
+          "default": 1.0
+        },
+        "providers": {
+          "type": "object",
+          "minProperties": 1,
+          "patternProperties": {
+            "^[a-zA-Z][a-zA-Z0-9_]*$": {
+              "type": "object",
+              "required": ["enabled", "api_key"],
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "api_key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "organization": {
+                  "type": "string"
+                },
+                "base_url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "models": {
+                  "type": "object",
+                  "required": ["default", "available"],
+                  "properties": {
+                    "default": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "available": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "minItems": 1,
+                      "uniqueItems": true
+                    }
+                  }
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "temperature": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 2.0
+                    },
+                    "max_tokens": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 32000
+                    },
+                    "top_p": {
+                      "type": "number",
+                      "minimum": 0.0,
+                      "maximum": 1.0
+                    },
+                    "frequency_penalty": {
+                      "type": "number",
+                      "minimum": -2.0,
+                      "maximum": 2.0
+                    },
+                    "presence_penalty": {
+                      "type": "number",
+                      "minimum": -2.0,
+                      "maximum": 2.0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "default_interface": {
+          "type": "string",
+          "enum": ["cli", "gui"],
+          "default": "cli"
+        },
+        "cli": {
+          "type": "object",
+          "properties": {
+            "prompt_style": {
+              "type": "string",
+              "enum": ["simple", "colorful", "minimal"],
+              "default": "colorful"
+            },
+            "show_timestamps": {
+              "type": "boolean",
+              "default": true
+            },
+            "auto_complete": {
+              "type": "boolean",
+              "default": true
+            },
+            "history_size": {
+              "type": "integer",
+              "minimum": 10,
+              "maximum": 10000,
+              "default": 1000
+            }
+          }
+        },
+        "gui": {
+          "type": "object",
+          "properties": {
+            "theme": {
+              "type": "string",
+              "enum": ["default", "dark", "light"],
+              "default": "default"
+            },
+            "window_size": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 400
+              },
+              "minItems": 2,
+              "maxItems": 2,
+              "default": [800, 600]
+            },
+            "font_size": {
+              "type": "integer",
+              "minimum": 8,
+              "maximum": 24,
+              "default": 12
+            },
+            "auto_scroll": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+          "default": "INFO"
+        },
+        "file_path": {
+          "type": "string",
+          "default": "logs/llm_chat.log"
+        },
+        "max_file_size": {
+          "type": "string",
+          "pattern": "^\\d+[KMGT]?B$",
+          "default": "10MB"
+        },
+        "backup_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 5
+        },
+        "format": {
+          "type": "string",
+          "default": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        },
+        "console_output": {
+          "type": "boolean",
+          "default": true
+        },
+        "file_output": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "storage": {
+      "type": "object",
+      "properties": {
+        "chat_history": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "max_sessions": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "auto_save_interval": {
+              "type": "integer",
+              "minimum": 60,
+              "default": 300
+            },
+            "storage_path": {
+              "type": "string",
+              "default": "data/chat_history"
+            }
+          }
+        },
+        "config_backup": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "backup_interval": {
+              "type": "integer",
+              "minimum": 3600,
+              "default": 86400
+            },
+            "max_backups": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "backup_path": {
+              "type": "string",
+              "default": "config/backup"
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "api_key_validation": {
+          "type": "boolean",
+          "default": true
+        },
+        "rate_limiting": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "requests_per_minute": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 60
+            },
+            "burst_limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          }
+        },
+        "input_sanitization": {
+          "type": "boolean",
+          "default": true
+        },
+        "output_filtering": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    }
+  }
+}

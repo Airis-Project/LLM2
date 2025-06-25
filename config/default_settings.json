@@ -135,6 +135,22 @@
         }
       }
     },
+    "ui_integration": {
+      "auto_insert_code": false,
+      "show_model_info": true,
+      "enable_context_menu": true,
+      "chat_panel": {
+        "auto_scroll": true,
+        "show_timestamps": true,
+        "max_history": 1000,
+        "export_formats": ["txt", "json", "md"]
+      },
+      "editor_integration": {
+        "highlight_generated_code": true,
+        "show_generation_markers": true,
+        "enable_inline_suggestions": false
+      }
+    },
     "embeddings": {
       "model": "sentence-transformers/all-MiniLM-L6-v2",
       "dimension": 384,
