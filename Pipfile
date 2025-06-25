@@ -1,0 +1,21 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+llm-code-assistant = {path = ".", editable = true}
+
+[dev-packages]
+llm-code-assistant = {path = ".", extras = ["dev", "test", "docs"], editable = true}
+
+[requires]
+python_version = "3.11"
+
+[scripts]
+start = "python -m src.main"
+test = "pytest"
+lint = "flake8 src tests"
+format = "black src tests"
+type-check = "mypy src"
+docs = "sphinx-build -b html docs docs/_build"

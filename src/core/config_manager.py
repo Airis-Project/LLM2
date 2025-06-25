@@ -250,9 +250,21 @@ class ConfigManager:
         except Exception as e:
             logger.error(f"設定ファイルの保存に失敗: {e}")
     
-    def get_config(self) -> AppConfig:
-        """設定オブジェクトの取得"""
-        return self.config
+    def get_config(self, section: str = None, default: Any = None) -> Any:
+        """
+        設定を取得する
+        
+        Args:
+            section: 設定セクション名
+            default: デフォルト値
+            
+        Returns:
+            設定値
+        """
+        if section is None:
+            return self.config
+        
+        return self.config.get(section, default)
     
     def reload_config(self):
         """設定の再読み込み"""

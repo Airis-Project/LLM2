@@ -1,0 +1,76 @@
+# config/app_config.yaml
+app:
+  name: "LLM Code Assistant"
+  version: "1.0.0"
+  debug: true
+
+llm:
+  providers:
+    local:
+      base_url: "http://localhost:11434"
+      model: "starcoder:7b"  # 最速モデル（32.7秒）
+      max_tokens: 4000
+      temperature: 0.1
+      timeout: 120
+      
+    # パフォーマンス別モデル設定
+    performance_tiers:
+      fastest:
+        model: "starcoder:7b"      # 32.7秒 - 最速
+        use_case: "リアルタイム応答、コード補完"
+        
+      balanced:
+        model: "tarcoder:7b"  # 54.7秒 - バランス型
+        use_case: "詳細な説明付きコード生成"
+        
+      stable:
+        model: "codellama:7b"      # 55.4秒 - 安定性重視
+        use_case: "複雑なコード解析"
+        
+      advanced:
+        model: "phi4:14b"          # 84.5秒 - 高度な推論
+        use_case: "アーキテクチャ設計、複雑な問題解決"
+      
+  default_provider: "local"
+  
+  # 用途別設定
+  code_generation:
+    model: "starcoder:7b"
+    temperature: 0.05
+    max_tokens: 6000
+    stop_sequences: ["```", "---", "Human:", "Assistant:"]
+    
+  code_explanation:
+    model: "tarcoder:7b"
+    temperature: 0.1
+    max_tokens: 8000
+    
+  quick_response:
+    model: "starcoder:7b"
+    temperature: 0.1
+    max_tokens: 2000
+    
+  detailed_analysis:
+    model: "phi4:14b"
+    temperature: 0.05
+    max_tokens: 10000
+
+  # メモリ効率設定
+  memory_optimization:
+    enable_model_unloading: true
+    max_concurrent_requests: 1
+    model_timeout: 600
+    preferred_models: ["starcoder:7b", "codellama:7b"]
+
+database:
+  path: "data/app.db"
+  
+logging:
+  level: "INFO"
+  file: "logs/app.log"
+  
+# パフォーマンス監視
+monitoring:
+  track_response_times: true
+  log_model_switches: true
+  memory_threshold_warning: 20.0  # GB

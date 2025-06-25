@@ -1,0 +1,69 @@
+# requirements-dev.txt - 開発環境用依存関係
+# 開発・テスト・ドキュメント生成用パッケージ
+
+# 本番環境の依存関係を含む
+-r requirements.txt
+
+# 開発ツール
+pre-commit==3.6.2
+black==24.2.0
+isort==5.13.2
+flake8==7.0.0
+mypy==1.8.0
+bandit==1.7.7
+safety==3.5.2
+ruff==0.3.0
+
+# テストツール
+pytest==8.1.1
+pytest-asyncio==0.23.5
+pytest-cov==4.0.0
+pytest-mock==3.12.0
+pytest-qt==4.3.1
+pytest-xvfb==3.0.0
+pytest-benchmark==4.0.0
+coverage==7.4.3
+factory-boy==3.3.0
+faker==24.0.0
+
+# ドキュメント生成
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+myst-parser==2.0.0
+sphinx-autodoc-typehints==1.25.0
+sphinx-copybutton==0.5.2
+sphinxcontrib-mermaid==0.9.2
+
+# デバッグ・プロファイリング
+ipdb==0.13.13
+line-profiler==4.1.1
+memory-profiler==0.61.0
+py-spy==0.3.14
+
+# 型チェック・静的解析
+mypy-extensions==1.0.0
+types-requests==2.31.0.20240218
+types-PyYAML==6.0.12.12
+types-python-dateutil==2.9.0.20240316
+types-colorama==0.4.15.20240311
+
+# ビルド・パッケージング
+build==1.0.3
+twine==5.0.0
+wheel==0.42.0
+setuptools-scm==8.0.4
+
+# 開発用ユーティリティ
+jupyter==1.0.0
+ipykernel==6.29.3
+notebook==7.1.2
+jupyterlab==4.1.5
+
+# データ分析・可視化
+pandas==2.2.1
+matplotlib==3.8.3
+seaborn==0.13.2
+plotly==5.19.0
+
+# パフォーマンス測定
+locust==2.24.1

@@ -1,0 +1,257 @@
+# config/logging_config.yaml
+# ログ設定ファイル - LLM Code Assistant用
+
+version: 1
+disable_existing_loggers: false
+
+# ログフォーマッタの定義
+formatters:
+  # 標準フォーマッタ
+  standard:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  # 詳細フォーマッタ（デバッグ用）
+  detailed:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s:%(lineno)d - %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  
+  # コンソール用フォーマッタ（色付き）
+  console:
+    format: '%(asctime)s - %(name)-20s - %(levelname)-8s - %(message)s'
+    datefmt: '%H:%M:%S'
+  
+  # JSON形式フォーマッタ
+  json:
+    format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "module": "%(module)s", "function": "%(funcName)s", "line": %(lineno)d, "message": "%(message)s"}'
+    datefmt: '%Y-%m-%dT%H:%M:%S'
+
+# ハンドラーの定義
+handlers:
+  # コンソール出力ハンドラー
+  console:
+    class: logging.StreamHandler
+    level: INFO
+    formatter: console
+    stream: ext://sys.stdout
+  
+  # メインアプリケーションログファイル
+  app_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: standard
+    filename: logs/app.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf-8
+  
+  # エラーログファイル
+  error_file:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: detailed
+    filename: logs/error.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf-8
+  
+  # デバッグログファイル
+  debug_file:
+    class: logging.handlers.RotatingFileHandler
+    level: DEBUG
+    formatter: detailed
+    filename: logs/debug.log
+    maxBytes: 52428800  # 50MB
+    backupCount: 3
+    encoding: utf-8
+  
+  # LLM専用ログファイル
+  llm_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/llm.log
+    maxBytes: 20971520  # 20MB
+    backupCount: 5
+    encoding: utf-8
+  
+  # パフォーマンス監視ログ
+  performance_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/performance.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 3
+    encoding: utf-8
+  
+  # セキュリティログ
+  security_file:
+    class: logging.handlers.RotatingFileHandler
+    level: WARNING
+    formatter: detailed
+    filename: logs/security.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf-8
+
+# ロガーの定義
+loggers:
+  # メインアプリケーション
+  src:
+    level: INFO
+    handlers: [console, app_file, error_file]
+    propagate: false
+  
+  # コア機能
+  src.core:
+    level: INFO
+    handlers: [console, app_file, debug_file]
+    propagate: false
+  
+  # 設定管理
+  src.core.config_manager:
+    level: INFO
+    handlers: [console, app_file]
+    propagate: false
+  
+  # プロジェクト管理
+  src.core.project_manager:
+    level: INFO
+    handlers: [console, app_file, debug_file]
+    propagate: false
+  
+  # ファイル管理
+  src.core.file_manager:
+    level: INFO
+    handlers: [console, app_file]
+    propagate: false
+  
+  # LLM関連
+  src.llm:
+    level: INFO
+    handlers: [console, llm_file, error_file]
+    propagate: false
+  
+  # OpenAI クライアント
+  src.llm.openai_client:
+    level: INFO
+    handlers: [llm_file, error_file]
+    propagate: false
+  
+  # Claude クライアント
+  src.llm.claude_client:
+    level: INFO
+    handlers: [llm_file, error_file]
+    propagate: false
+  
+  # ローカルLLM クライアント
+  src.llm.local_llm_client:
+    level: INFO
+    handlers: [console, llm_file, error_file]
+    propagate: false
+  
+  # UI関連
+  src.ui:
+    level: INFO
+    handlers: [console, app_file]
+    propagate: false
+  
+  # メインウィンドウ
+  src.ui.main_window:
+    level: INFO
+    handlers: [console, app_file]
+    propagate: false
+  
+  # コードエディタ
+  src.ui.code_editor:
+    level: INFO
+    handlers: [app_file, debug_file]
+    propagate: false
+  
+  # チャットパネル
+  src.ui.chat_panel:
+    level: INFO
+    handlers: [console, app_file, llm_file]
+    propagate: false
+  
+  # ユーティリティ
+  src.utils:
+    level: INFO
+    handlers: [app_file, debug_file]
+    propagate: false
+  
+  # ファイルユーティリティ
+  src.utils.file_utils:
+    level: INFO
+    handlers: [app_file]
+    propagate: false
+  
+  # 暗号化ユーティリティ
+  src.utils.encryption_utils:
+    level: WARNING
+    handlers: [security_file, error_file]
+    propagate: false
+  
+  # プラグインシステム
+  src.plugins:
+    level: INFO
+    handlers: [console, app_file, debug_file]
+    propagate: false
+  
+  # Git統合
+  src.plugins.git_integration:
+    level: INFO
+    handlers: [app_file, debug_file]
+    propagate: false
+  
+  # パフォーマンス監視
+  performance:
+    level: INFO
+    handlers: [performance_file]
+    propagate: false
+  
+  # セキュリティ監視
+  security:
+    level: WARNING
+    handlers: [security_file, error_file]
+    propagate: false
+  
+  # 外部ライブラリのログレベル調整
+  urllib3:
+    level: WARNING
+    handlers: [error_file]
+    propagate: false
+  
+  requests:
+    level: WARNING
+    handlers: [error_file]
+    propagate: false
+  
+  openai:
+    level: INFO
+    handlers: [llm_file]
+    propagate: false
+  
+  anthropic:
+    level: INFO
+    handlers: [llm_file]
+    propagate: false
+  
+  transformers:
+    level: WARNING
+    handlers: [llm_file, error_file]
+    propagate: false
+  
+  torch:
+    level: WARNING
+    handlers: [error_file]
+    propagate: false
+
+# ルートロガー設定
+root:
+  level: INFO
+  handlers: [console, app_file, error_file]
+
+# 追加設定
+incremental: false

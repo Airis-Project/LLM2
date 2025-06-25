@@ -58,81 +58,40 @@
       "font_size": 10
     }
   },
-   "llm": {
-    "default_provider": "local",
+  "llm": {
+    "default_provider": "openai",
     "providers": {
       "openai": {
         "enabled": true,
         "model": "gpt-4",
-        "max_tokens": 8192,
-        "temperature": 0.3,
-        "top_p": 0.9,
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "top_p": 1.0,
         "frequency_penalty": 0.0,
         "presence_penalty": 0.0,
-        "timeout": 120,
+        "timeout": 30,
         "max_retries": 3,
         "stream": false
       },
       "claude": {
         "enabled": true,
         "model": "claude-3-sonnet-20240229",
-        "max_tokens": 8192,
-        "temperature": 0.3,
-        "timeout": 120,
+        "max_tokens": 4096,
+        "temperature": 0.7,
+        "timeout": 30,
         "max_retries": 3,
         "stream": false
       },
       "local": {
         "enabled": true,
         "model_path": "models/",
-        "model_name": "wizardcoder:33b",
-        "context_length": 8192,
+        "model_name": "codellama-7b-instruct.gguf",
+        "context_length": 4096,
         "threads": 8,
         "gpu_layers": 0,
-        "temperature": 0.2,
-        "timeout": 900,
-        "max_retries": 2,
-        "quality_priority": true,
-        "model_selection": {
-          "code_generation": {
-            "preferred_models": ["wizardcoder:33b", "starcoder:7b", "codellama:7b"],
-            "timeout": 600,
-            "priority": "quality"
-          },
-          "code_explanation": {
-            "preferred_models": ["wizardcoder:33b", "starcoder:7b"],
-            "timeout": 300,
-            "priority": "quality"
-          },
-          "debugging": {
-            "preferred_models": ["wizardcoder:33b", "starcoder:7b"],
-            "timeout": 600,
-            "priority": "quality"
-          },
-          "refactoring": {
-            "preferred_models": ["wizardcoder:33b", "phi4:14b", "starcoder:7b"],
-            "timeout": 600,
-            "priority": "quality"
-          },
-          "quick_response": {
-            "preferred_models": ["starcoder:7b", "codellama:7b"],
-            "timeout": 300,
-            "priority": "balanced"
-          },
-          "complex_analysis": {
-            "preferred_models": ["wizardcoder:33b", "phi4:14b"],
-            "timeout": 900,
-            "priority": "quality",
-            "allow_extended_time": true
-          }
-        },
-        "timeout_per_model": {
-          "wizardcoder:33b": 900,
-          "phi4:14b": 720,
-          "starcoder:7b": 600,
-          "codellama:7b": 600,
-          "nomic-embed-text:latest": 300
-        }
+        "temperature": 0.7,
+        "timeout": 60,
+        "max_retries": 1
       }
     },
     "embeddings": {

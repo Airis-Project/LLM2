@@ -1,0 +1,91 @@
+# conda-environment.yml - Conda環境設定ファイル
+name: llm-code-assistant
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+  - defaults
+
+dependencies:
+  # Python
+  - python=3.11.8
+  
+  # Core dependencies available via conda
+  - numpy=1.26.4
+  - scipy=1.12.0
+  - pandas=2.2.1
+  - matplotlib=3.8.3
+  - pillow=10.2.0
+  - pyyaml=6.0.1
+  - requests=2.31.0
+  - click=8.1.7
+  - tqdm=4.66.2
+  - colorama=0.4.6
+  - cryptography=42.0.5
+  - psutil=6.1.0
+  - watchdog=4.0.0
+  
+  # PyQt6 (if available via conda)
+  - pyqt=5.15.10  # PyQt6 might not be available, fallback to PyQt5
+  
+  # Scientific computing
+  - jupyter=1.0.0
+  - notebook=7.1.2
+  - ipykernel=6.29.3
+  
+  # Development tools
+  - pytest=8.1.1
+  - black=24.2.0
+  - flake8=7.0.0
+  - mypy=1.8.0
+  
+  # PyTorch (CPU version)
+  - pytorch=2.2.1
+  - torchvision=0.17.1
+  - torchaudio=2.2.1
+  - cpuonly  # Remove this line for GPU version
+  
+  # pip dependencies (not available via conda)
+  - pip
+  - pip:
+    - openai==1.12.0
+    - anthropic==0.18.1
+    - transformers==4.38.2
+    - sentence-transformers==2.5.1
+    - llama-cpp-python==0.2.55
+    - faiss-cpu==1.7.4
+    - chromadb==0.4.24
+    - fastapi==0.109.2
+    - uvicorn[standard]==0.27.1
+    - pydantic==2.6.4
+    - sqlalchemy==2.0.28
+    - alembic==1.13.1
+    - loguru==0.7.2
+    - rich==13.7.1
+    - python-dotenv==1.0.1
+    - GitPython==3.1.42
+    - Pygments==2.17.2
+    - Jinja2==3.1.3
+    - pluggy==1.4.0
+    - aiofiles==23.2.1
+    - httpx==0.27.0
+    - aiohttp==3.9.3
+    - python-magic==0.4.27
+    - python-docx==1.1.0
+    - openpyxl==3.1.2
+    - PyPDF2==3.0.1
+    - markdown==3.6
+    - beautifulsoup4==4.12.3
+    - nltk==3.9.1
+    - spacy==3.8.7
+    - autopep8==2.0.4
+    - pylint==3.1.0
+    - bcrypt==4.1.2
+    - keyring==24.3.1
+    - structlog==24.1.0
+    - python-dateutil==2.9.0
+    - typing-extensions==4.10.0
+    - toml==0.10.2
+    - accelerate==0.27.2
+    - tokenizers==0.15.2
+    - ctransformers==0.2.27

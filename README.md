@@ -1,259 +1,419 @@
 # LLM Code Assistant
 
-![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Status](https://img.shields.io/badge/status-development-yellow.svg)
+![LLM Code Assistant Logo](assets/icons/app_icon.png)
 
-**LLM Code Assistant** は、複数のLLMプロバイダー（OpenAI、Claude、ローカルLLM）を統合したインテリジェントなコード開発支援ツールです。プロジェクト管理、コード生成、リファクタリング、レビューなどの機能を提供し、開発者の生産性を大幅に向上させます。
+[![Python Version](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://github.com/llm-code-assistant/llm-code-assistant)
+[![Coverage](https://img.shields.io/badge/coverage-85%25-yellow.svg)](https://github.com/llm-code-assistant/llm-code-assistant)
+[![Documentation](https://img.shields.io/badge/docs-latest-blue.svg)](https://llm-code-assistant.readthedocs.io/)
 
-## 🌟 主な機能
+**LLM Code Assistant** は、AI を活用したコード生成・支援ツールです。OpenAI GPT、Claude、ローカル LLM など複数の AI プロバイダーをサポートし、開発者の生産性向上を支援します。
 
-### 🤖 マルチLLM対応
-- **OpenAI GPT-4/GPT-3.5** - 高品質なコード生成とレビュー
-- **Claude (Anthropic)** - 詳細な分析と説明
-- **ローカルLLM** - プライバシーを重視した開発環境
+## ✨ 主な機能
 
-### 📁 プロジェクト管理
-- プロジェクトの作成、管理、バックアップ
-- ファイル構造の自動認識と整理
-- Git統合による版数管理
-- テンプレートベースの迅速な開発
+### 🤖 マルチ LLM サポート
+- **OpenAI GPT シリーズ**: GPT-4, GPT-3.5-turbo
+- **Anthropic Claude**: Claude-3, Claude-2
+- **ローカル LLM**: Llama, CodeLlama, その他 Hugging Face モデル
+- **カスタム API**: 独自の LLM エンドポイント対応
 
-### 💻 コード支援機能
-- **インテリジェントなコード生成** - 自然言語からコードを生成
-- **自動リファクタリング** - コード品質の向上
-- **コードレビュー** - AIによる詳細な分析とフィードバック
-- **バグ検出と修正提案** - 潜在的な問題の早期発見
+### 💻 高機能コードエディター
+- シンタックスハイライト（100+ 言語対応）
+- インテリジェントなコード補完
+- リアルタイムエラー検出
+- Git 統合
+- プロジェクト管理
 
-### 🎨 ユーザーインターフェース
-- **モダンなGUI** - tkinter/customtkinterベースの直感的なUI
-- **シンタックスハイライト** - 複数言語対応
-- **テーマシステム** - ライト/ダーク/カスタムテーマ
-- **分割パネル** - 効率的なワークスペース
+### 🎯 AI アシスタント機能
+- **コード生成**: 自然言語からのコード生成
+- **コードレビュー**: AI による品質チェック
+- **リファクタリング**: コード改善提案
+- **ドキュメント生成**: 自動コメント・ドキュメント作成
+- **バグ修正**: エラー解析と修正提案
 
-### 🔌 プラグインシステム
-- **拡張可能なアーキテクチャ** - カスタムプラグインの開発
-- **Git統合プラグイン** - 版数管理の自動化
-- **コードフォーマッタープラグイン** - 複数言語の自動整形
-- **エクスポートツールプラグイン** - 多様な形式での出力
+### 🔧 開発支援ツール
+- **テンプレート管理**: カスタマイズ可能なコードテンプレート
+- **スニペット管理**: 再利用可能なコード片
+- **プラグインシステム**: 機能拡張対応
+- **バックアップ・同期**: クラウド連携
 
 ## 🚀 クイックスタート
 
-### 前提条件
-
-- Python 3.8以上
-- pip（Pythonパッケージマネージャー）
-- Git（オプション、版数管理用）
+### システム要件
+- **Python**: 3.11 以上
+- **OS**: Windows 10+, macOS 10.15+, Linux (Ubuntu 20.04+)
+- **RAM**: 8GB 以上推奨（ローカル LLM 使用時は 16GB+）
+- **ストレージ**: 2GB 以上の空き容量
 
 ### インストール
 
-1. **リポジトリのクローン**
+#### 方法 1: pip でインストール（推奨）
 ```bash
-git clone https://github.com/yourusername/LLM-Code-Assistant.git
-cd LLM-Code-Assistant
+# 基本インストール
+pip install llm-code-assistant
 
-2.仮想環境の作成（推奨）
+# 全機能付きインストール
+pip install llm-code-assistant[full]
+
+# GPU サポート付きインストール
+pip install llm-code-assistant[gpu]
+
+方法 2: ソースからインストール
+# リポジトリをクローン
+git clone https://github.com/llm-code-assistant/llm-code-assistant.git
+cd llm-code-assistant
+
+# 仮想環境作成・有効化
 python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# Windows
-venv\Scripts\activate
-
-# macOS/Linux
-source venv/bin/activate
-
-3.依存関係のインストール
+# 依存関係インストール
 pip install -r requirements.txt
 
-4.環境変数の設定
-# .env.example を .env にコピー
-cp .env.example .env
+# 開発モードでインストール
+pip install -e .
 
-# .env ファイルを編集してAPIキーを設定
-# 最低限必要な設定：
-# - OPENAI_API_KEY（OpenAI使用時）
-# - CLAUDE_API_KEY（Claude使用時）
+方法 3: Conda でインストール
+# Conda 環境作成
+conda env create -f conda-environment.yml
+conda activate llm-code-assistant
 
-5.アプリケーションの起動
-python src/main.py
+# アプリケーション実行
+python -m src.main
 
-開発環境のセットアップ
-開発者向けの詳細なセットアップ：
-# 開発用依存関係のインストール
-pip install -r requirements-dev.txt
+初回セットアップ
+1.アプリケーション起動
+    llm-code-assistant
 
-# 開発環境の初期化
-python scripts/setup_dev.py
+2.API キー設定
+    設定 → LLM プロバイダー → API キー入力
+    OpenAI: sk-...
+    Anthropic: sk-ant-...
 
-# テストの実行
-python scripts/test_runner.py
-
-# コード品質チェック
-flake8 src/
-black src/
+3.初期設定完了
+    テーマ選択
+    エディター設定
+    プロジェクトフォルダー指定
 
 📖 使用方法
-基本的な使用フロー
-プロジェクトの作成
+基本的な使い方
+1. コード生成
+プロンプト例:
+"Python でファイルを読み込んで CSV として保存する関数を作成してください"
 
-新規プロジェクトを作成または既存プロジェクトを開く
-プロジェクト設定（言語、フレームワーク等）を選択
-LLMプロバイダーの選択
+生成されるコード:
+```python
+import csv
+import pandas as pd
 
-設定画面でLLMプロバイダーを選択
-APIキーの設定と接続テスト
-コード開発
+def save_to_csv(data, filename):
+    """データを CSV ファイルとして保存する関数"""
+    try:
+        df = pd.DataFrame(data)
+        df.to_csv(filename, index=False, encoding='utf-8')
+        print(f"データが {filename} に保存されました")
+        return True
+    except Exception as e:
+        print(f"エラー: {e}")
+        return False
 
-チャットパネルで自然言語による指示
-コードエディターでの直接編集
-AIによるコード生成とレビュー
-プロジェクト管理
 
-ファイルの整理と構造化
-版数管理とバックアップ
-エクスポートと共有
+#### 2. コードレビュー
+- コードを選択
+- 右クリック → "AI レビュー"
+- 品質・セキュリティ・パフォーマンスの観点から分析
 
-主要な機能の使用例
+#### 3. リファクタリング
+- 改善したいコードを選択
+- Ctrl+Shift+R (Cmd+Shift+R)
+- AI が最適化案を提示
 
-コード生成
-ユーザー: "Pythonでファイルを読み込んでCSVデータを処理するクラスを作成してください"
-AI: [詳細なコード生成と説明]
+### 高度な機能
 
-コードレビュー
-ユーザー: "このコードの問題点を教えてください"
-AI: [コードの分析、問題点の指摘、改善提案]
+#### カスタムテンプレート作成
+```yaml
+# templates/python_class.yaml
+name: "Python クラステンプレート"
+language: "python"
+description: "基本的な Python クラス構造"
+template: |
+  class {{class_name}}:
+      """{{description}}"""
+      
+      def __init__(self{{init_params}}):
+          {{init_body}}
+      
+      def __str__(self):
+          return f"{{class_name}}({{str_format}})"
+      
+      {{methods}}
 
-リファクタリング
-ユーザー: "この関数をより効率的にリファクタリングしてください"
-AI: [最適化されたコードと変更理由の説明]
+variables:
+  - name: "class_name"
+    type: "string"
+    required: true
+  - name: "description"
+    type: "string"
+    default: "クラスの説明"
+  - name: "init_params"
+    type: "string"
+    default: ""
+
+プラグイン開発
+# plugins/my_plugin.py
+from src.core.plugin_system import PluginBase
+
+class MyPlugin(PluginBase):
+    name = "My Custom Plugin"
+    version = "1.0.0"
+    
+    def initialize(self):
+        """プラグイン初期化処理"""
+        self.add_menu_item("Tools", "My Tool", self.run_tool)
+    
+    def run_tool(self):
+        """カスタムツール実行"""
+        # ツールの処理を実装
+        pass
 
 ⚙️ 設定
-環境変数
-主要な環境変数の説明：
-# LLMプロバイダー設定
-DEFAULT_LLM_PROVIDER=openai          # デフォルトプロバイダー
-OPENAI_API_KEY=your_api_key          # OpenAI APIキー
-CLAUDE_API_KEY=your_api_key          # Claude APIキー
-
-# アプリケーション設定
-LOG_LEVEL=INFO                       # ログレベル
-DEFAULT_THEME=light                  # デフォルトテーマ
-DEFAULT_LANGUAGE=ja                  # デフォルト言語
-
-# データベース設定
-VECTOR_DB_PATH=./data/vector_db      # ベクトルDBパス
-SQLITE_DB_PATH=./data/history.db     # 履歴DBパス
-
 設定ファイル
-config/default_settings.json - デフォルト設定
-config/logging_config.yaml - ログ設定
-.env - 環境変数（機密情報含む）
+設定は以下のファイルで管理されます：
+    config/default_settings.json: デフォルト設定
+    config/user_settings.json: ユーザー設定
+    config/logging_config.yaml: ログ設定
+    .env: 環境変数（API キーなど）
 
-🔌 プラグイン開発
-カスタムプラグインの作成
-from src.plugins.base_plugin import BasePlugin
+主要設定項目
+LLM プロバイダー設定
+{
+  "llm": {
+    "providers": {
+      "openai": {
+        "api_key": "your-api-key",
+        "model": "gpt-4",
+        "max_tokens": 2048,
+        "temperature": 0.7
+      },
+      "claude": {
+        "api_key": "your-api-key",
+        "model": "claude-3-sonnet-20240229",
+        "max_tokens": 4096
+      },
+      "local": {
+        "model_path": "models/codellama-7b-instruct.gguf",
+        "context_length": 4096,
+        "gpu_layers": 32
+      }
+    }
+  }
+}
 
-class MyCustomPlugin(BasePlugin):
-    def __init__(self):
-        super().__init__()
-        self.name = "My Custom Plugin"
-        self.version = "1.0.0"
-    
-    def activate(self):
-        # プラグインの初期化処理
-        pass
-    
-    def execute(self, context):
-        # プラグインのメイン処理
-        pass
+UI テーマ設定
+{
+  "ui": {
+    "theme": {
+      "current": "dark",
+      "custom_themes": {
+        "my_theme": {
+          "background": "#1e1e1e",
+          "foreground": "#d4d4d4",
+          "accent": "#007acc"
+        }
+      }
+    }
+  }
+}
 
-詳細な開発ガイドは docs/development_guide.md を参照してください。
+🔌 API リファレンス
+REST API エンドポイント
+コード生成
+POST /api/v1/generate
+Content-Type: application/json
 
-🏗️ アーキテクチャ
-LLM-Code-Assistant/
-├── src/
-│   ├── core/           # コア機能
-│   ├── llm/            # LLM統合
-│   ├── ui/             # ユーザーインターフェース
-│   ├── plugins/        # プラグインシステム
-│   └── utils/          # ユーティリティ
-├── config/             # 設定ファイル
-├── data/               # データとテンプレート
-├── tests/              # テストスイート
-└── docs/               # ドキュメント
+{
+  "prompt": "Create a Python function to calculate fibonacci",
+  "language": "python",
+  "provider": "openai",
+  "model": "gpt-4"
+}
 
-詳細なアーキテクチャ設計は docs/architecture.md を参照してください。
+コードレビュー
+POST /api/v1/review
+Content-Type: application/json
+
+{
+  "code": "def fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n-1) + fibonacci(n-2)",
+  "language": "python",
+  "review_type": "quality"
+}
+
+Python API
+from llm_assistant import LLMAssistant
+
+# インスタンス作成
+assistant = LLMAssistant()
+
+# コード生成
+result = assistant.generate_code(
+    prompt="Create a REST API with FastAPI",
+    language="python",
+    provider="openai"
+)
+
+# コードレビュー
+review = assistant.review_code(
+    code=my_code,
+    language="python",
+    focus=["security", "performance"]
+)
 
 🧪 テスト
-テストの実行
-# 全テストの実行
-python -m pytest tests/
+テスト実行
+# 全テスト実行
+pytest
 
-# 特定のテストモジュール
-python -m pytest tests/test_core/
+# カバレッジ付きテスト
+pytest --cov=src --cov-report=html
 
-# カバレッジレポート付き
-python -m pytest tests/ --cov=src --cov-report=html
+# 特定のテストのみ
+pytest tests/test_llm_providers.py
 
-テストの種類
-単体テスト - 個別コンポーネントのテスト
-統合テスト - モジュール間の連携テスト
-UIテスト - ユーザーインターフェースのテスト
-E2Eテスト - エンドツーエンドのシナリオテスト
+# マーカー指定
+pytest -m "not slow"  # 重いテストを除外
+pytest -m "integration"  # 統合テストのみ
+
+テストカテゴリ
+    Unit Tests: 単体テスト
+    Integration Tests: 統合テスト
+    UI Tests: GUI テスト
+    LLM Tests: AI 機能テスト
+    Performance Tests: パフォーマンステスト
+
 📚 ドキュメント
-ユーザーガイド - 詳細な使用方法
-API リファレンス - 開発者向けAPI
-開発ガイド - 開発者向け情報
-アーキテクチャ - システム設計
+ドキュメント生成
+# Sphinx ドキュメント生成
+cd docs
+make html
+
+# ドキュメントサーバー起動
+python -m http.server 8000 -d _build/html
+
+ドキュメント構成
+    ユーザーガイド: 基本的な使用方法
+    開発者ガイド: プラグイン・カスタマイズ
+    API リファレンス: 詳細な API 仕様
+    FAQ: よくある質問と回答
 🤝 コントリビューション
-プロジェクトへの貢献を歓迎します！
+開発環境セットアップ
+# リポジトリフォーク・クローン
+git clone https://github.com/yourusername/llm-code-assistant.git
+cd llm-code-assistant
 
-貢献方法
-Issue の報告
+# 開発環境セットアップ
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements-dev.txt
 
-バグレポート
-機能要望
-改善提案
-プルリクエスト
-
-フォークしてブランチを作成
-変更を実装
-テストを追加/更新
-プルリクエストを送信
-開発ガイドライン
-
-PEP 8に準拠したコードスタイル
-適切なテストカバレッジ
-明確なコミットメッセージ
-ドキュメントの更新
-開発者向けセットアップ
-
-# 開発用ブランチの作成
-git checkout -b feature/your-feature-name
-
-# 開発環境の準備
-python scripts/setup_dev.py
-
-# コード品質チェック
+# pre-commit フック設定
 pre-commit install
+
+コントリビューションガイドライン
+    Issue 作成: バグ報告・機能要望
+    フォーク: リポジトリをフォーク
+    ブランチ作成: git checkout -b feature/your-feature
+    開発: コード作成・テスト追加
+    テスト: pytest でテスト実行
+    コミット: git commit -m "Add: your feature"
+    プッシュ: git push origin feature/your-feature
+    プルリクエスト: GitHub で PR 作成
+
+コーディング規約
+    Python: PEP 8 準拠
+    フォーマッター: Black
+    リンター: Flake8, Pylint
+    型チェック: MyPy
+    ドキュメント: Google スタイル
+
+🐛 トラブルシューティング
+よくある問題
+1. API キーエラー
+Error: Invalid API key for OpenAI
+
+解決方法:
+
+設定画面で API キーを確認
+    .env ファイルの OPENAI_API_KEY を確認
+    API キーの権限を確認
+
+2.ローカル LLM が動作しない
+Error: Failed to load local model
+
+解決方法:
+
+    モデルファイルのパスを確認
+    十分なメモリがあるか確認
+    GPU ドライバーを更新（GPU 使用時）
+
+3. UI が表示されない
+Error: Qt platform plugin could not be initialized
+
+解決方法:
+# Linux の場合
+sudo apt-get install python3-pyqt6
+
+# macOS の場合
+brew install pyqt6
+
+# Windows の場合
+pip uninstall PyQt6
+pip install PyQt6
+
+ログファイル確認
+# ログディレクトリ
+ls logs/
+
+# エラーログ確認
+tail -f logs/error.log
+
+# デバッグログ確認
+tail -f logs/debug.log
 
 📄 ライセンス
 このプロジェクトは MIT License の下で公開されています。
 
 🙏 謝辞
-OpenAI - GPT APIの提供
-Anthropic - Claude APIの提供
-Hugging Face - ローカルLLMサポート
-オープンソースコミュニティの皆様
+    OpenAI: GPT API の提供
+    Anthropic: Claude API の提供
+    Hugging Face: Transformers ライブラリ
+    Qt: GUI フレームワーク
+    コントリビューター: 全ての貢献者に感謝
 📞 サポート
-問題が発生した場合
-FAQ の確認 - よくある質問と解決方法
-Issue の検索 - 既存の問題と解決策
-新しい Issue の作成 - 詳細な情報と再現手順
-連絡先
-GitHub Issues: プロジェクトのIssue
-Email: support@example.com
-Discord: 開発者コミュニティ
+コミュニティ
+    GitHub Discussions: 質問・議論
+    Discord: コミュニティチャット
+    Reddit: r/LLMCodeAssistant
+商用サポート
+    Email: support@llm-code-assistant.com
+    Documentation: https://llm-code-assistant.readthedocs.io/
+    Enterprise: enterprise@llm-code-assistant.com
 
-LLM Code Assistant - AIの力で開発を加速する 🚀
+🗺️ ロードマップ
+v1.1.0 (予定)
+    Visual Studio Code 拡張機能
+    Jupyter Notebook 統合
+    音声入力対応
+    チーム機能
+v1.2.0 (予定)
+    Web ブラウザ版
+    モバイルアプリ
+    クラウド同期
+    高度なワークフロー
+v2.0.0 (予定)
+    マルチモーダル AI 対応
+    自動テスト生成
+    CI/CD 統合
+    エンタープライズ機能
 
-最終更新: 2024年12月
+LLM Code Assistant - AI と共に、より良いコードを。

@@ -321,20 +321,41 @@ class LLMFactory:
             raise
     
     def _build_config(self, 
-                    provider_info: LLMProviderInfo, 
-                    config: Optional[LLMConfig], 
-                    **kwargs) -> LLMConfig:
-        """
-        設定を構築
-        
+                     provider_info: LLMProviderInfo, 
+                     config: Optional[LLMConfig], 
+                     **kwargs) -> LLMConfig:
+        """設定を構築
         Args:
-            provider_info: プロバイダー情報
-            config: ベース設定
-            **kwargs: 追加パラメータ
-            
+        provider_info: プロバイダー情報
+        config: ベース設定
+        **kwargs: 追加パラメータ
+        
         Returns:
-            LLMConfig: 構築された設定
+        LLMConfig: 構築された設定
         """
+        # ベース設定の作成
+        if config:
+            effective_config = config
+        else:
+            # デフォルト設定から作成
+            default_config = provider_info.default_config or {}
+            effective_config = LLMConfig(
+                model=default_config.get('model', 'default'),
+                temperature=default_config.get('temperature', 0.7),
+                max_tokens=default_config.get('max_tokens', 2048)
+            )
+        
+        # 追加パラメータを適用
+        for key, value in kwargs.items():
+            setattr(effective_config, key, value)
+        
+        # プロバイダー固有の設定を適用
+        if provider_info.default_config:
+            for key, value in provider_info.default_config.items():
+                if not hasattr(effective_config, key):
+                    setattr(effective_config, key, value)
+        
+        return effective_config
         try:
             # ベース設定
             base_config = provider_info.default_config or {}
@@ -352,16 +373,16 @@ class LLMFactory:
                     model=merged_config.get('model', config.model),
                     temperature=merged_config.get('temperature', config.temperature),
                     max_tokens=merged_config.get('max_tokens', config.max_tokens),
-                    top_p=merged_config.get('top_p', getattr(config, 'top_p', 1.0)),
-                    frequency_penalty=merged_config.get('frequency_penalty', getattr(config, 'frequency_penalty', 0.0)),
-                    presence_penalty=merged_config.get('presence_penalty', getattr(config, 'presence_penalty', 0.0)),
-                    stop_sequences=merged_config.get('stop_sequences', getattr(config, 'stop_sequences', [])),
-                    stream=merged_config.get('stream', getattr(config, 'stream', False)),
-                    api_key=merged_config.get('api_key', getattr(config, 'api_key', '')),
-                    base_url=merged_config.get('base_url', getattr(config, 'base_url', '')),
-                    timeout=merged_config.get('timeout', getattr(config, 'timeout', 30)),
-                    max_retries=merged_config.get('max_retries', getattr(config, 'max_retries', 3)),
-                    metadata=merged_config.get('metadata', getattr(config, 'metadata', {}))
+                    top_p=merged_config.get('top_p', config.top_p),
+                    frequency_penalty=merged_config.get('frequency_penalty', config.frequency_penalty),
+                    presence_penalty=merged_config.get('presence_penalty', config.presence_penalty),
+                    stop_sequences=merged_config.get('stop_sequences', config.stop_sequences),
+                    stream=merged_config.get('stream', config.stream),
+                    api_key=merged_config.get('api_key', config.api_key),
+                    base_url=merged_config.get('base_url', config.base_url),
+                    timeout=merged_config.get('timeout', config.timeout),
+                    max_retries=merged_config.get('max_retries', config.max_retries),
+                    metadata=merged_config.get('metadata', config.metadata)
                 )
             else:
                 # 新規設定作成
@@ -420,8 +441,7 @@ class LLMFactory:
                                 setattr(temp_config, key, value)
                             
                             temp_client = LocalLLMClient(temp_config)
-                            # validate_connection メソッドを使用
-                            if temp_client.validate_connection():
+                            if temp_client.is_available():
                                 available_providers.append(provider_name)
                         except Exception as e:
                             self.logger.debug(f"ローカルLLM可用性チェックエラー: {e}")
@@ -431,7 +451,7 @@ class LLMFactory:
             except Exception as e:
                 self.logger.warning(f"プロバイダー {provider_name} の可用性チェックでエラー: {e}")
         
-        return available_providers
+        return available_providers    
     
     def get_provider_info(self, provider_name: str) -> Optional[LLMProviderInfo]:
         """
@@ -483,18 +503,14 @@ class LLMFactory:
             # クライアントからモデル一覧を取得
             client = self.get_or_create_client(effective_provider)
             if hasattr(client, 'get_available_models'):
-                # 同期メソッドを非同期で実行
-                models = await asyncio.get_event_loop().run_in_executor(
-                    None, client.get_available_models
-                )
-                return models
+                return await client.get_available_models()
             else:
                 return provider_info.supported_models
                 
         except Exception as e:
             self.logger.error(f"モデル一覧取得エラー: {e}")
             return []
-          
+    
     def validate_provider_config(self, provider_name: str, config: Dict[str, Any]) -> bool:
         """
         プロバイダー設定を検証
@@ -563,29 +579,22 @@ class LLMFactory:
             test_client = self.create_client(provider_name)
             
             # 接続テスト
-            if hasattr(test_client, 'validate_connection'):
-                # 同期メソッドを非同期で実行
-                success = await asyncio.get_event_loop().run_in_executor(
-                    None, test_client.validate_connection
-                )
-                result = {
-                    'success': success,
-                    'provider': provider_name,
-                    'model': test_client.config.model if test_client.config else 'unknown'
-                }
+            if hasattr(test_client, 'test_connection'):
+                result = await test_client.test_connection()
             else:
                 # 簡単なテストメッセージで確認
-                test_messages = [{"role": "user", "content": "Hello, this is a connection test."}]
+                from .base_llm import LLMMessage
+                test_message = LLMMessage(
+                    role=LLMRole.USER,
+                    content="Hello, this is a connection test."
+                )
                 
                 try:
-                    response = await asyncio.get_event_loop().run_in_executor(
-                        None, test_client.generate, test_messages
-                    )
+                    response = await test_client.generate_async([test_message])
                     result = {
                         'success': True,
-                        'provider': provider_name,
-                        'model': test_client.config.model if test_client.config else 'unknown',
-                        'test_response': response[:50] + "..." if len(response) > 50 else response
+                        'response_time': response.response_time,
+                        'model': response.model
                     }
                 except Exception as e:
                     result = {
@@ -594,8 +603,7 @@ class LLMFactory:
                     }
             
             # テスト用クライアントをクリーンアップ
-            if hasattr(test_client, 'cleanup'):
-                test_client.cleanup()
+            test_client.cleanup()
             
             return result
             

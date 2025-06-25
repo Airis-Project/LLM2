@@ -1,71 +1,82 @@
-# config/logging_config.yaml
-# ログ設定ファイル - LLM Code Assistant用
+# logging_config.yaml - LLM Code Assistant ログ設定
+# Python logging.config.dictConfig() 形式
 
 version: 1
 disable_existing_loggers: false
 
-# ログフォーマッタの定義
+# ログフォーマッター定義
 formatters:
-  # 標準フォーマッタ
+  # 標準フォーマッター
   standard:
     format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     datefmt: '%Y-%m-%d %H:%M:%S'
   
-  # 詳細フォーマッタ（デバッグ用）
+  # 詳細フォーマッター（デバッグ用）
   detailed:
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(module)s - %(funcName)s:%(lineno)d - %(message)s'
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(funcName)s:%(lineno)d - %(message)s'
     datefmt: '%Y-%m-%d %H:%M:%S'
   
-  # コンソール用フォーマッタ（色付き）
-  console:
-    format: '%(asctime)s - %(name)-20s - %(levelname)-8s - %(message)s'
-    datefmt: '%H:%M:%S'
-  
-  # JSON形式フォーマッタ
+  # JSON フォーマッター（構造化ログ）
   json:
     format: '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "module": "%(module)s", "function": "%(funcName)s", "line": %(lineno)d, "message": "%(message)s"}'
     datefmt: '%Y-%m-%dT%H:%M:%S'
+  
+  # シンプルフォーマッター（コンソール用）
+  simple:
+    format: '%(levelname)s - %(name)s - %(message)s'
+  
+  # エラー専用フォーマッター
+  error:
+    format: '%(asctime)s - ERROR - %(name)s - %(module)s:%(funcName)s:%(lineno)d - %(message)s - %(exc_info)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
 
-# ハンドラーの定義
+# ログハンドラー定義
 handlers:
   # コンソール出力ハンドラー
   console:
     class: logging.StreamHandler
     level: INFO
-    formatter: console
+    formatter: simple
     stream: ext://sys.stdout
   
-  # メインアプリケーションログファイル
-  app_file:
+  # デバッグ用コンソールハンドラー
+  debug_console:
+    class: logging.StreamHandler
+    level: DEBUG
+    formatter: detailed
+    stream: ext://sys.stdout
+  
+  # 一般ログファイルハンドラー
+  file:
     class: logging.handlers.RotatingFileHandler
     level: INFO
     formatter: standard
-    filename: logs/app.log
+    filename: logs/llm_assistant.log
     maxBytes: 10485760  # 10MB
     backupCount: 5
-    encoding: utf-8
+    encoding: utf8
   
-  # エラーログファイル
-  error_file:
-    class: logging.handlers.RotatingFileHandler
-    level: ERROR
-    formatter: detailed
-    filename: logs/error.log
-    maxBytes: 10485760  # 10MB
-    backupCount: 10
-    encoding: utf-8
-  
-  # デバッグログファイル
+  # デバッグログファイルハンドラー
   debug_file:
     class: logging.handlers.RotatingFileHandler
     level: DEBUG
     formatter: detailed
     filename: logs/debug.log
-    maxBytes: 52428800  # 50MB
+    maxBytes: 10485760  # 10MB
     backupCount: 3
-    encoding: utf-8
+    encoding: utf8
   
-  # LLM専用ログファイル
+  # エラーログファイルハンドラー
+  error_file:
+    class: logging.handlers.RotatingFileHandler
+    level: ERROR
+    formatter: error
+    filename: logs/error.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 10
+    encoding: utf8
+  
+  # LLM専用ログハンドラー
   llm_file:
     class: logging.handlers.RotatingFileHandler
     level: INFO
@@ -73,19 +84,39 @@ handlers:
     filename: logs/llm.log
     maxBytes: 20971520  # 20MB
     backupCount: 5
-    encoding: utf-8
+    encoding: utf8
   
-  # パフォーマンス監視ログ
-  performance_file:
+  # UI専用ログハンドラー
+  ui_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: standard
+    filename: logs/ui.log
+    maxBytes: 5242880  # 5MB
+    backupCount: 3
+    encoding: utf8
+  
+  # データベース専用ログハンドラー
+  db_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: detailed
+    filename: logs/database.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+  
+  # API専用ログハンドラー
+  api_file:
     class: logging.handlers.RotatingFileHandler
     level: INFO
     formatter: json
-    filename: logs/performance.log
+    filename: logs/api.log
     maxBytes: 10485760  # 10MB
-    backupCount: 3
-    encoding: utf-8
+    backupCount: 5
+    encoding: utf8
   
-  # セキュリティログ
+  # セキュリティログハンドラー
   security_file:
     class: logging.handlers.RotatingFileHandler
     level: WARNING
@@ -93,165 +124,327 @@ handlers:
     filename: logs/security.log
     maxBytes: 10485760  # 10MB
     backupCount: 10
-    encoding: utf-8
+    encoding: utf8
+  
+  # パフォーマンスログハンドラー
+  performance_file:
+    class: logging.handlers.RotatingFileHandler
+    level: INFO
+    formatter: json
+    filename: logs/performance.log
+    maxBytes: 10485760  # 10MB
+    backupCount: 5
+    encoding: utf8
+  
+  # 日次ログハンドラー
+  daily_file:
+    class: logging.handlers.TimedRotatingFileHandler
+    level: INFO
+    formatter: standard
+    filename: logs/daily.log
+    when: midnight
+    interval: 1
+    backupCount: 30
+    encoding: utf8
+  
+  # メール通知ハンドラー（重要なエラー用）
+  email:
+    class: logging.handlers.SMTPHandler
+    level: CRITICAL
+    formatter: error
+    mailhost: localhost
+    fromaddr: noreply@llm-assistant.local
+    toaddrs: ['admin@llm-assistant.local']
+    subject: 'LLM Code Assistant - Critical Error'
+  
+  # システムログハンドラー（Unix系のみ）
+  syslog:
+    class: logging.handlers.SysLogHandler
+    level: WARNING
+    formatter: standard
+    address: ['localhost', 514]
+    facility: user
 
-# ロガーの定義
+# ロガー定義
 loggers:
-  # メインアプリケーション
-  src:
+  # ルートロガー
+  '':
     level: INFO
-    handlers: [console, app_file, error_file]
+    handlers: [console, file, error_file]
     propagate: false
   
-  # コア機能
-  src.core:
+  # アプリケーションメインロガー
+  'llm_assistant':
     level: INFO
-    handlers: [console, app_file, debug_file]
+    handlers: [console, file, error_file, daily_file]
     propagate: false
   
-  # 設定管理
-  src.core.config_manager:
-    level: INFO
-    handlers: [console, app_file]
-    propagate: false
-  
-  # プロジェクト管理
-  src.core.project_manager:
-    level: INFO
-    handlers: [console, app_file, debug_file]
-    propagate: false
-  
-  # ファイル管理
-  src.core.file_manager:
-    level: INFO
-    handlers: [console, app_file]
-    propagate: false
-  
-  # LLM関連
-  src.llm:
+  # LLM関連ロガー
+  'llm_assistant.llm':
     level: INFO
     handlers: [console, llm_file, error_file]
     propagate: false
   
-  # OpenAI クライアント
-  src.llm.openai_client:
+  # OpenAI関連ロガー
+  'llm_assistant.llm.openai':
     level: INFO
-    handlers: [llm_file, error_file]
+    handlers: [llm_file]
+    propagate: true
+  
+  # Claude関連ロガー
+  'llm_assistant.llm.claude':
+    level: INFO
+    handlers: [llm_file]
+    propagate: true
+  
+  # ローカルLLM関連ロガー
+  'llm_assistant.llm.local':
+    level: INFO
+    handlers: [llm_file]
+    propagate: true
+  
+  # UI関連ロガー
+  'llm_assistant.ui':
+    level: INFO
+    handlers: [ui_file, error_file]
     propagate: false
   
-  # Claude クライアント
-  src.llm.claude_client:
+  # データベース関連ロガー
+  'llm_assistant.database':
     level: INFO
-    handlers: [llm_file, error_file]
+    handlers: [db_file, error_file]
     propagate: false
   
-  # ローカルLLM クライアント
-  src.llm.local_llm_client:
-    level: INFO
-    handlers: [console, llm_file, error_file]
+  # SQLAlchemy関連ロガー
+  'sqlalchemy':
+    level: WARNING
+    handlers: [db_file]
     propagate: false
   
-  # UI関連
-  src.ui:
+  'sqlalchemy.engine':
     level: INFO
-    handlers: [console, app_file]
+    handlers: [db_file]
     propagate: false
   
-  # メインウィンドウ
-  src.ui.main_window:
+  # API関連ロガー
+  'llm_assistant.api':
     level: INFO
-    handlers: [console, app_file]
+    handlers: [api_file, error_file]
     propagate: false
   
-  # コードエディタ
-  src.ui.code_editor:
+  # FastAPI関連ロガー
+  'uvicorn':
     level: INFO
-    handlers: [app_file, debug_file]
+    handlers: [api_file]
     propagate: false
   
-  # チャットパネル
-  src.ui.chat_panel:
+  'uvicorn.access':
     level: INFO
-    handlers: [console, app_file, llm_file]
+    handlers: [api_file]
     propagate: false
   
-  # ユーティリティ
-  src.utils:
-    level: INFO
-    handlers: [app_file, debug_file]
-    propagate: false
-  
-  # ファイルユーティリティ
-  src.utils.file_utils:
-    level: INFO
-    handlers: [app_file]
-    propagate: false
-  
-  # 暗号化ユーティリティ
-  src.utils.encryption_utils:
+  # セキュリティ関連ロガー
+  'llm_assistant.security':
     level: WARNING
     handlers: [security_file, error_file]
     propagate: false
   
-  # プラグインシステム
-  src.plugins:
-    level: INFO
-    handlers: [console, app_file, debug_file]
-    propagate: false
-  
-  # Git統合
-  src.plugins.git_integration:
-    level: INFO
-    handlers: [app_file, debug_file]
-    propagate: false
-  
-  # パフォーマンス監視
-  performance:
+  # パフォーマンス関連ロガー
+  'llm_assistant.performance':
     level: INFO
     handlers: [performance_file]
     propagate: false
   
-  # セキュリティ監視
-  security:
-    level: WARNING
-    handlers: [security_file, error_file]
+  # ファイル管理関連ロガー
+  'llm_assistant.file_manager':
+    level: INFO
+    handlers: [file, error_file]
+    propagate: false
+  
+  # プロジェクト管理関連ロガー
+  'llm_assistant.project':
+    level: INFO
+    handlers: [file, error_file]
+    propagate: false
+  
+  # プラグイン関連ロガー
+  'llm_assistant.plugins':
+    level: INFO
+    handlers: [file, error_file]
+    propagate: false
+  
+  # 設定関連ロガー
+  'llm_assistant.config':
+    level: INFO
+    handlers: [file, error_file]
+    propagate: false
+  
+  # ユーティリティ関連ロガー
+  'llm_assistant.utils':
+    level: INFO
+    handlers: [file]
+    propagate: false
+  
+  # テスト関連ロガー
+  'llm_assistant.tests':
+    level: DEBUG
+    handlers: [debug_file]
     propagate: false
   
   # 外部ライブラリのログレベル調整
-  urllib3:
+  'transformers':
     level: WARNING
-    handlers: [error_file]
+    handlers: [llm_file]
     propagate: false
   
-  requests:
+  'torch':
     level: WARNING
-    handlers: [error_file]
+    handlers: [llm_file]
     propagate: false
   
-  openai:
+  'openai':
     level: INFO
     handlers: [llm_file]
     propagate: false
   
-  anthropic:
+  'anthropic':
     level: INFO
     handlers: [llm_file]
     propagate: false
   
-  transformers:
+  'httpx':
     level: WARNING
-    handlers: [llm_file, error_file]
+    handlers: [api_file]
     propagate: false
   
-  torch:
+  'requests':
     level: WARNING
-    handlers: [error_file]
+    handlers: [api_file]
+    propagate: false
+  
+  'urllib3':
+    level: WARNING
+    handlers: [api_file]
+    propagate: false
+  
+  'PyQt6':
+    level: WARNING
+    handlers: [ui_file]
+    propagate: false
+  
+  'matplotlib':
+    level: WARNING
+    handlers: [file]
+    propagate: false
+  
+  'PIL':
+    level: WARNING
+    handlers: [file]
     propagate: false
 
-# ルートロガー設定
-root:
-  level: INFO
-  handlers: [console, app_file, error_file]
+# 開発環境用設定
+development:
+  loggers:
+    '':
+      level: DEBUG
+      handlers: [debug_console, debug_file, error_file]
+    
+    'llm_assistant':
+      level: DEBUG
+      handlers: [debug_console, debug_file, error_file]
 
-# 追加設定
-incremental: false
+# 本番環境用設定
+production:
+  loggers:
+    '':
+      level: INFO
+      handlers: [file, error_file, daily_file]
+    
+    'llm_assistant':
+      level: INFO
+      handlers: [file, error_file, daily_file, email]
+
+# テスト環境用設定
+testing:
+  loggers:
+    '':
+      level: DEBUG
+      handlers: [debug_console]
+    
+    'llm_assistant':
+      level: DEBUG
+      handlers: [debug_console, debug_file]
+
+# ログレベル定義
+levels:
+  CRITICAL: 50
+  ERROR: 40
+  WARNING: 30
+  INFO: 20
+  DEBUG: 10
+  NOTSET: 0
+
+# カスタムフィルター定義
+filters:
+  # 機密情報フィルター
+  sensitive_filter:
+    '()': 'llm_assistant.utils.logging_filters.SensitiveDataFilter'
+  
+  # レート制限フィルター
+  rate_limit_filter:
+    '()': 'llm_assistant.utils.logging_filters.RateLimitFilter'
+    max_messages: 100
+    time_window: 60
+  
+  # 重複ログフィルター
+  duplicate_filter:
+    '()': 'llm_assistant.utils.logging_filters.DuplicateFilter'
+    max_duplicates: 5
+    time_window: 300
+
+# ログ設定のメタデータ
+metadata:
+  version: "1.0.0"
+  created: "2024-01-01"
+  description: "LLM Code Assistant logging configuration"
+  author: "LLM Code Assistant Team"
+  
+  # ログファイルの説明
+  log_files:
+    llm_assistant.log: "メインアプリケーションログ"
+    debug.log: "デバッグ情報ログ"
+    error.log: "エラー専用ログ"
+    llm.log: "LLM関連ログ（JSON形式）"
+    ui.log: "UI関連ログ"
+    database.log: "データベース関連ログ"
+    api.log: "API関連ログ（JSON形式）"
+    security.log: "セキュリティ関連ログ"
+    performance.log: "パフォーマンス関連ログ（JSON形式）"
+    daily.log: "日次ローテーションログ"
+  
+  # ログローテーション設定
+  rotation:
+    size_based:
+      max_size: "10MB"
+      backup_count: 5
+    time_based:
+      interval: "daily"
+      backup_count: 30
+  
+  # 推奨設定
+  recommendations:
+    development:
+      console_level: "DEBUG"
+      file_level: "DEBUG"
+      enable_detailed_formatting: true
+    
+    production:
+      console_level: "INFO"
+      file_level: "INFO"
+      enable_email_notifications: true
+      enable_log_compression: true
+    
+    testing:
+      console_level: "DEBUG"
+      file_level: "WARNING"
+      capture_stdout: true
