@@ -46,7 +46,7 @@ def run_comprehensive_tests():
             "name": "Python関数生成",
             "prompt": "Create a simple Python function to calculate factorial",
             "task_type": TaskType.CODE_GENERATION,
-            "priority": "balanced"
+            "priority": "balanced"#"quality"
         },
         {
             "name": "JavaScript関数生成", 

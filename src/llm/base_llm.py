@@ -15,13 +15,30 @@ import time
 import asyncio
 from pathlib import Path
 
-from ..core.logger import get_logger
-from ..core.config_manager import get_config
-from ..core.event_system import get_event_system, Event
-from ..utils.validation_utils import ValidationUtils
-from ..utils.text_utils import TextUtils
+from src.core.logger import get_logger
+from src.utils.validation_utils import ValidationUtils
+from src.utils.text_utils import TextUtils
 
 logger = get_logger(__name__)
+
+# 遅延インポート用の関数
+def _get_config():
+    """設定を遅延インポートで取得"""
+    try:
+        from ..core.config_manager import get_config
+        return get_config()
+    except ImportError:
+        logger.warning("設定管理が利用できません")
+        return None
+
+def _get_event_system():
+    """イベントシステムを遅延インポートで取得"""
+    try:
+        from ..core.event_system import get_event_system, Event
+        return get_event_system(), Event
+    except ImportError:
+        logger.warning("イベントシステムが利用できません")
+        return None, None
 
 class LLMRole(Enum):
     """LLMロール定義"""
@@ -36,6 +53,30 @@ class LLMStatus(Enum):
     PROCESSING = "processing"
     ERROR = "error"
     UNAVAILABLE = "unavailable"
+
+@dataclass
+class LLMUsage:
+    """LLM使用量情報クラス"""
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """辞書形式に変換"""
+        return {
+            'prompt_tokens': self.prompt_tokens,
+            'completion_tokens': self.completion_tokens,
+            'total_tokens': self.total_tokens
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> 'LLMUsage':
+        """辞書から使用量情報を作成"""
+        return cls(
+            prompt_tokens=data.get('prompt_tokens', 0),
+            completion_tokens=data.get('completion_tokens', 0),
+            total_tokens=data.get('total_tokens', 0)
+        )
 
 @dataclass
 class LLMMessage:
@@ -69,7 +110,7 @@ class LLMResponse:
     """LLM応答クラス"""
     content: str
     model: str = ""
-    usage: Dict[str, int] = field(default_factory=dict)
+    usage: LLMUsage = field(default_factory=LLMUsage)
     finish_reason: str = ""
     response_time: float = 0.0
     timestamp: datetime = field(default_factory=datetime.now)
@@ -80,7 +121,7 @@ class LLMResponse:
         return {
             'content': self.content,
             'model': self.model,
-            'usage': self.usage,
+            'usage': self.usage.to_dict(),
             'finish_reason': self.finish_reason,
             'response_time': self.response_time,
             'timestamp': self.timestamp.isoformat(),
@@ -90,10 +131,13 @@ class LLMResponse:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'LLMResponse':
         """辞書から応答を作成"""
+        usage_data = data.get('usage', {})
+        usage = LLMUsage.from_dict(usage_data) if isinstance(usage_data, dict) else LLMUsage()
+        
         return cls(
             content=data['content'],
             model=data.get('model', ''),
-            usage=data.get('usage', {}),
+            usage=usage,
             finish_reason=data.get('finish_reason', ''),
             response_time=data.get('response_time', 0.0),
             timestamp=datetime.fromisoformat(data.get('timestamp', datetime.now().isoformat())),
@@ -147,6 +191,35 @@ class LLMConfig:
             retry_count=data.get('retry_count', 3),
             retry_delay=data.get('retry_delay', 1.0)
         )
+
+# 例外クラスの定義
+class LLMError(Exception):
+    """LLM関連のベース例外クラス"""
+    pass
+
+class LLMException(LLMError):
+    """LLM例外クラス"""
+    pass
+
+class LLMConnectionError(LLMError):
+    """LLM接続エラー"""
+    pass
+
+class LLMRateLimitError(LLMError):
+    """LLMレート制限エラー"""
+    pass
+
+class LLMAuthenticationError(LLMError):
+    """LLM認証エラー"""
+    pass
+
+class LLMTimeoutError(LLMError):
+    """LLMタイムアウトエラー"""
+    pass
+
+class LLMValidationError(LLMError):
+    """LLM検証エラー"""
+    pass
 
 class LLMMetrics:
     """LLMメトリクス管理クラス"""
@@ -211,8 +284,9 @@ class BaseLLM(ABC):
         self.validation_utils = ValidationUtils()
         self.text_utils = TextUtils()
         
-        # イベントシステム
-        self.event_system = get_event_system()
+        # イベントシステム（遅延初期化）
+        self.event_system = None
+        self._Event = None
         
         # ロガー
         self.logger = get_logger(self.__class__.__name__)
@@ -221,6 +295,12 @@ class BaseLLM(ABC):
         self._validate_config()
         
         self.logger.info(f"{self.__class__.__name__}を初期化しました")
+    
+    def _get_event_system_components(self):
+        """イベントシステムコンポーネントを遅延取得"""
+        if self.event_system is None:
+            self.event_system, self._Event = _get_event_system()
+        return self.event_system, self._Event
     
     @abstractmethod
     async def generate_async(self, 
@@ -273,7 +353,7 @@ class BaseLLM(ABC):
             Dict[str, Any]: モデル情報
         """
         pass
-    
+
     def generate(self, 
                 messages: List[LLMMessage], 
                 config: Optional[LLMConfig] = None) -> LLMResponse:
@@ -317,10 +397,6 @@ class BaseLLM(ABC):
             asyncio.set_event_loop(loop)
             try:
                 async_gen = self.generate_stream_async(messages, config)
-                
-                async def run_async_generator():
-                    async for chunk in async_gen:
-                        yield chunk
                 
                 # 非同期ジェネレーターを同期的に実行
                 async def collect_chunks():
@@ -562,31 +638,41 @@ class BaseLLM(ABC):
         old_status = self.status
         self.status = status
         
-        # 状態変更イベントを発行
-        self.event_system.emit(Event(
-            'llm_status_changed',
-            {
-                'llm_class': self.__class__.__name__,
-                'old_status': old_status.value,
-                'new_status': status.value
-            }
-        ))
+        # 状態変更イベントを発行（イベントシステムが利用可能な場合）
+        event_system, Event = self._get_event_system_components()
+        if event_system and Event:
+            try:
+                event_system.emit(Event(
+                    'llm_status_changed',
+                    {
+                        'llm_class': self.__class__.__name__,
+                        'old_status': old_status.value,
+                        'new_status': status.value
+                    }
+                ))
+            except Exception as e:
+                self.logger.warning(f"状態変更イベント発行エラー: {e}")
     
     def _record_request(self, success: bool, tokens: int = 0, response_time: float = 0.0):
         """リクエストを記録"""
         self.metrics.record_request(success, tokens, response_time)
         
-        # メトリクスイベントを発行
-        self.event_system.emit(Event(
-            'llm_request_completed',
-            {
-                'llm_class': self.__class__.__name__,
-                'success': success,
-                'tokens': tokens,
-                'response_time': response_time,
-                'metrics': self.metrics.get_statistics()
-            }
-        ))
+        # メトリクスイベントを発行（イベントシステムが利用可能な場合）
+        event_system, Event = self._get_event_system_components()
+        if event_system and Event:
+            try:
+                event_system.emit(Event(
+                    'llm_request_completed',
+                    {
+                        'llm_class': self.__class__.__name__,
+                        'success': success,
+                        'tokens': tokens,
+                        'response_time': response_time,
+                        'metrics': self.metrics.get_statistics()
+                    }
+                ))
+            except Exception as e:
+                self.logger.warning(f"メトリクスイベント発行エラー: {e}")
     
     async def _execute_with_retry(self, 
                                  func, 

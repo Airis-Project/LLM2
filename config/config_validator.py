@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#config/config_validator.py
 """
 設定検証システム
 JSONスキーマベースの設定検証

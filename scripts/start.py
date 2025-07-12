@@ -16,9 +16,12 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.core.logger import setup_logger
-from src.core.config_manager import ConfigManager
+#from src.core.config_manager import ConfigManager
 from src.core.exceptions import LLMChatError
 
+def get_config_manager():
+    from src.core.config_manager import ConfigManager
+    return ConfigManager()
 
 class SystemStarter:
     """システム起動クラス"""
@@ -179,7 +182,7 @@ class SystemStarter:
     def _validate_configuration(self, config_path: Optional[str]) -> bool:
         """設定を検証"""
         try:
-            config_manager = ConfigManager()
+            config_manager = get_config_manager()
             
             if config_path:
                 config_manager.load_config(config_path)

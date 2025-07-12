@@ -14,9 +14,11 @@ import threading
 import time
 from datetime import datetime
 
-from ..core.config_manager import ConfigManager
-from ..utils.file_utils import FileUtils
+from src.utils.file_utils import FileUtils
 
+def get_config_manager():
+        from src.core.config_manager import ConfigManager
+        return ConfigManager()
 
 class FileTreeNode:
     """ファイルツリーノードクラス"""
@@ -234,7 +236,7 @@ class FileTree(ttk.Frame):
         self.logger = logging.getLogger(__name__)
         
         # 設定管理
-        self.config_manager = ConfigManager()
+        self.config_manager = get_config_manager()
         
         # コールバック関数
         self.on_file_select: Optional[Callable[[str], None]] = None

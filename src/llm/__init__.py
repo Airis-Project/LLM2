@@ -1,179 +1,598 @@
 # src/llm/__init__.py
 """
-LLM (Large Language Model) パッケージ
-
-このパッケージは様々なLLMプロバイダーとの統合を提供します：
-- OpenAI GPT
-- Anthropic Claude  
-- ローカルLLM (Ollama, llama.cpp等)
-
-主要コンポーネント:
-- base_llm: LLMの基底クラスと設定
-- llm_factory: LLMインスタンスの生成と管理
-- 各種クライアント実装 (OpenAI, Claude, Local)
+LLMパッケージ初期化
+低レベルLLMクライアント層とプロンプト管理、レスポンス解析、中間サービス統合
 """
 
-from .base_llm import BaseLLM, LLMConfig, LLMRole, LLMStatus
+# プロバイダー基底クラス
+class LLMProvider:
+    """LLMプロバイダー基底クラス"""
+    
+    def __init__(self, name: str, config: dict = None):
+        self.name = name
+        self.config = config or {}
+    
+    def get_name(self) -> str:
+        return self.name
+    
+    def get_config(self) -> dict:
+        return self.config
+    
+    def is_available(self) -> bool:
+        """プロバイダーが利用可能かチェック"""
+        return True
+    
+# ベースクラスとデータ型
+from typing import List
+from .base_llm import (
+    BaseLLM,
+    LLMMessage,
+    LLMResponse,
+    LLMConfig,
+    LLMRole,
+    LLMStatus,
+    LLMUsage,
+    LLMError,
+    LLMException,
+    LLMConnectionError,
+    LLMRateLimitError,
+    LLMAuthenticationError,
+    LLMTimeoutError,
+    LLMValidationError
+)
+
+# LLMクライアント実装
 from .openai_client import OpenAIClient
 from .claude_client import ClaudeClient
 from .local_llm_client import LocalLLMClient
+
+# ファクトリーとプロバイダー管理
 from .llm_factory import (
-    LLMFactory, 
-    LLMProvider, 
+    LLMFactory,
     LLMProviderInfo,
-    get_llm_factory
+    get_llm_factory,
+    create_llm_client,
+    create_llm_client_async,
+    #get_available_providers,
+    #get_provider_info
+)
+
+# プロンプトテンプレート管理
+from .prompt_templates import (
+    PromptTemplate,
+    PromptTemplateManager,
+    TemplateVariable,
+    TemplateCategory,
+    get_prompt_template_manager,
+    #load_template,
+    #load_template_async,
+    #render_template,
+    #render_template_async
+)
+
+# レスポンス解析
+from .response_parser import (
+    ResponseParser,
+    ParsedResponse,
+    CodeBlock,
+    #ReviewComment,
+    #DocumentSection,
+    get_response_parser,
+    #parse_code_response,
+    #parse_review_response,
+    #parse_documentation_response,
+    #parse_general_response
+)
+
+# 中間サービス層
+from .llm_service import (
+    LLMServiceCore,
+    LLMTask,
+    LLMResult,
+    TaskType,
+    TaskPriority,
+    get_llm_service,
+    execute_llm_task,
+    execute_llm_task_async
 )
 
 # バージョン情報
 __version__ = "1.0.0"
-__author__ = "LLM Code Assistant Team"
+__author__ = "LLM Integration Team"
+__description__ = "統合LLMクライアントライブラリ"
 
-# デフォルト設定
-DEFAULT_CONFIG = {
-    "temperature": 0.7,
-    "max_tokens": 2048,
-    "top_p": 1.0,
-    "frequency_penalty": 0.0,
-    "presence_penalty": 0.0,
-    "stream": False,
-    "timeout": 30,
-    "max_retries": 3
-}
-
-# サポートされているプロバイダー
-SUPPORTED_PROVIDERS = [
-    "openai",
-    "claude", 
-    "local"
-]
-
-# エクスポートする主要クラス
+# パッケージレベル設定
 __all__ = [
-    # 基底クラス
+    # ベースクラスとデータ型
+    "LLMProvider",
     "BaseLLM",
+    "LLMMessage", 
+    "LLMResponse",
     "LLMConfig",
     "LLMRole",
     "LLMStatus",
+    "LLMUsage",
+    "LLMError",
+    "LLMException",
+    "LLMConnectionError",
+    "LLMRateLimitError", 
+    "LLMAuthenticationError",
+    "LLMTimeoutError",
+    "LLMValidationError",
+    'get_available_providers',
+    'validate_llm_config',
     
-    # クライアント実装
+    # LLMクライアント実装
     "OpenAIClient",
     "ClaudeClient", 
     "LocalLLMClient",
     
-    # ファクトリー
+    # ファクトリーとプロバイダー管理
     "LLMFactory",
-    "LLMProvider",
     "LLMProviderInfo",
     "get_llm_factory",
-    
-    # 便利関数
     "create_llm_client",
     "create_llm_client_async",
     "get_available_providers",
+    "get_provider_info",
     
-    # 設定
-    "DEFAULT_CONFIG",
-    "SUPPORTED_PROVIDERS",
+    # プロンプトテンプレート管理
+    "PromptTemplate",
+    "PromptTemplateManager", 
+    "TemplateVariable",
+    "TemplateCategory",
+    "get_prompt_template_manager",
+    "load_template",
+    "load_template_async",
+    "render_template",
+    "render_template_async",
     
-    # バージョン情報
-    "__version__",
-    "__author__"
+    # レスポンス解析
+    "ResponseParser",
+    "ParsedResponse",
+    "CodeBlock",
+    "ReviewComment", 
+    "DocumentSection",
+    "get_response_parser",
+    "parse_code_response",
+    "parse_review_response",
+    "parse_documentation_response",
+    "parse_general_response",
+    
+    # 中間サービス層
+    "LLMServiceCore",
+    "LLMTask",
+    "LLMResult", 
+    "TaskType",
+    "TaskPriority",
+    "get_llm_service",
+    "execute_llm_task",
+    "execute_llm_task_async",
 ]
 
-def get_available_providers():
+# パッケージレベル初期化
+def initialize_llm_package(config=None):
     """
-    利用可能なLLMプロバイダーのリストを取得
-    
-    Returns:
-        List[str]: 利用可能なプロバイダー名のリスト
-    """
-    factory = get_llm_factory()
-    return factory.get_available_providers()
-
-def create_llm_client(provider_name: str, config: LLMConfig = None, **kwargs):
-    """
-    LLMクライアントの作成（同期版）
+    LLMパッケージを初期化
     
     Args:
-        provider_name: プロバイダー名 ("openai", "claude", "local")
-        config: LLM設定
-        **kwargs: 追加設定
-        
-    Returns:
-        BaseLLM: LLMクライアントインスタンス
-        
-    Raises:
-        ValueError: サポートされていないプロバイダーの場合
-        LLMConfigurationError: 設定エラーの場合
-    """
-    factory = get_llm_factory()
-    return factory.create_client(provider_name, config, **kwargs)
-
-async def create_llm_client_async(provider_name: str, config: LLMConfig = None, **kwargs):
-    """
-    LLMクライアントの作成（非同期版）
-    
-    Args:
-        provider_name: プロバイダー名
-        config: LLM設定
-        **kwargs: 追加設定
-        
-    Returns:
-        BaseLLM: LLMクライアントインスタンス
-    """
-    factory = get_llm_factory()
-    return await factory.create_client_async(provider_name, config, **kwargs)
-
-def validate_config(config: dict) -> bool:
-    """
-    LLM設定の検証
-    
-    Args:
-        config: 設定辞書
-        
-    Returns:
-        bool: 設定が有効な場合True
+        config: 初期化設定
     """
     try:
-        # 必須フィールドの確認
-        if "model" not in config:
-            return False
-            
-        # 数値範囲の確認
-        if "temperature" in config:
-            temp = config["temperature"]
-            if not isinstance(temp, (int, float)) or not (0.0 <= temp <= 2.0):
-                return False
-                
-        if "max_tokens" in config:
-            tokens = config["max_tokens"]
-            if not isinstance(tokens, int) or tokens <= 0:
-                return False
-                
-        return True
+        from ..core.logger import get_logger
+        logger = get_logger(__name__)
         
-    except Exception:
-        return False
-
-# パッケージ初期化処理
-def _initialize_llm_package():
-    """LLMパッケージの初期化"""
-    import logging
-    logger = logging.getLogger(__name__)
-    
-    try:
-        # ファクトリーの初期化
+        # ファクトリー初期化
         factory = get_llm_factory()
         
-        # 利用可能なプロバイダーをログ出力
-        available = get_available_providers()
-        if available:
-            logger.info(f"利用可能なLLMプロバイダー: {', '.join(available)}")
+        # プロンプトテンプレートマネージャー初期化
+        template_manager = get_prompt_template_manager()
+        
+        # レスポンスパーサー初期化
+        response_parser = get_response_parser()
+        
+        # 中間サービス初期化
+        llm_service = get_llm_service()
+        
+        logger.info("LLMパッケージを初期化しました")
+        
+        return {
+            'factory': factory,
+            'template_manager': template_manager,
+            'response_parser': response_parser,
+            'llm_service': llm_service
+        }
+        
+    except Exception as e:
+        print(f"LLMパッケージ初期化エラー: {e}")
+        raise
+
+def cleanup_llm_package():
+    """
+    LLMパッケージをクリーンアップ
+    """
+    try:
+        from ..core.logger import get_logger
+        logger = get_logger(__name__)
+        
+        # 中間サービスクリーンアップ
+        llm_service = get_llm_service()
+        llm_service.cleanup()
+        
+        # ファクトリークリーンアップ
+        factory = get_llm_factory()
+        if hasattr(factory, 'cleanup'):
+            factory.cleanup()
+        
+        logger.info("LLMパッケージをクリーンアップしました")
+        
+    except Exception as e:
+        print(f"LLMパッケージクリーンアップエラー: {e}")
+
+# 便利関数
+def quick_generate(prompt: str, 
+    provider: str = None,
+    model: str = None,
+    **kwargs) -> str:
+    """
+    クイック生成（便利関数）
+    
+    Args:
+        prompt: プロンプト
+        provider: プロバイダー名
+        model: モデル名
+        **kwargs: 追加パラメータ
+        
+    Returns:
+        str: 生成されたテキスト
+    """
+    try:
+        result = execute_llm_task(
+            task_type=TaskType.GENERAL,
+            prompt=prompt,
+            provider=provider,
+            model=model,
+            **kwargs
+        )
+        
+        if result.success:
+            return result.content
         else:
-            logger.warning("利用可能なLLMプロバイダーが見つかりません")
+            raise LLMException(f"生成エラー: {result.error}")
             
     except Exception as e:
-        logger.error(f"LLMパッケージ初期化エラー: {e}")
+        raise LLMException(f"クイック生成エラー: {e}")
 
-# パッケージ読み込み時に初期化実行
-_initialize_llm_package()
+async def quick_generate_async(prompt: str,
+    provider: str = None,
+    model: str = None,
+    **kwargs) -> str:
+    """
+    クイック生成（非同期版）
+    
+    Args:
+        prompt: プロンプト
+        provider: プロバイダー名
+        model: モデル名
+        **kwargs: 追加パラメータ
+        
+    Returns:
+        str: 生成されたテキスト
+    """
+    try:
+        result = await execute_llm_task_async(
+            task_type=TaskType.GENERAL,
+            prompt=prompt,
+            provider=provider,
+            model=model,
+            **kwargs
+        )
+        
+        if result.success:
+            return result.content
+        else:
+            raise LLMException(f"生成エラー: {result.error}")
+            
+    except Exception as e:
+        raise LLMException(f"クイック生成エラー: {e}")
+
+def generate_code(prompt: str,
+    language: str = None,
+    provider: str = None,
+    model: str = None,
+    **kwargs) -> dict:
+    """
+    コード生成（便利関数）
+    
+    Args:
+        prompt: プロンプト
+        language: プログラミング言語
+        provider: プロバイダー名
+        model: モデル名
+        **kwargs: 追加パラメータ
+        
+    Returns:
+        dict: 解析されたコード情報
+    """
+    try:
+        # テンプレート変数を準備
+        template_vars = {'language': language} if language else {}
+        template_vars.update(kwargs.get('template_vars', {}))
+        
+        result = execute_llm_task(
+            task_type=TaskType.CODE_GENERATION,
+            prompt=prompt,
+            template_name='code_generation',
+            template_vars=template_vars,
+            provider=provider,
+            model=model,
+            **kwargs
+        )
+        
+        if result.success:
+            return result.parsed_content
+        else:
+            raise LLMException(f"コード生成エラー: {result.error}")
+            
+    except Exception as e:
+        raise LLMException(f"コード生成エラー: {e}")
+
+async def generate_code_async(prompt: str,
+    language: str = None,
+    provider: str = None,
+    model: str = None,
+    **kwargs) -> dict:
+    """
+    コード生成（非同期版）
+    
+    Args:
+        prompt: プロンプト
+        language: プログラミング言語
+        provider: プロバイダー名
+        model: モデル名
+        **kwargs: 追加パラメータ
+        
+    Returns:
+        dict: 解析されたコード情報
+    """
+    try:
+        # テンプレート変数を準備
+        template_vars = {'language': language} if language else {}
+        template_vars.update(kwargs.get('template_vars', {}))
+        
+        result = await execute_llm_task_async(
+            task_type=TaskType.CODE_GENERATION,
+            prompt=prompt,
+            template_name='code_generation',
+            template_vars=template_vars,
+            provider=provider,
+            model=model,
+            **kwargs
+        )
+        
+        if result.success:
+            return result.parsed_content
+        else:
+            raise LLMException(f"コード生成エラー: {result.error}")
+            
+    except Exception as e:
+        raise LLMException(f"コード生成エラー: {e}")
+
+def review_code(code: str,
+               language: str = None,
+               provider: str = None,
+               model: str = None,
+               **kwargs) -> dict:
+    """
+    コードレビュー（便利関数）
+    
+    Args:
+        code: レビュー対象コード
+        language: プログラミング言語
+        provider: プロバイダー名
+        model: モデル名
+        **kwargs: 追加パラメータ
+        
+    Returns:
+        dict: 解析されたレビュー結果
+    """
+    try:
+        # テンプレート変数を準備
+        template_vars = {
+            'code': code,
+            'language': language or 'unknown'
+        }
+        template_vars.update(kwargs.get('template_vars', {}))
+        
+        result = execute_llm_task(
+            task_type=TaskType.CODE_REVIEW,
+            prompt=f"以下のコードをレビューしてください:\n\n```{language or ''}\n{code}\n```",
+            template_name='code_review',
+            template_vars=template_vars,
+            provider=provider,
+            model=model,
+            **kwargs
+        )
+        
+        if result.success:
+            return result.parsed_content
+        else:
+            raise LLMException(f"コードレビューエラー: {result.error}")
+            
+    except Exception as e:
+        raise LLMException(f"コードレビューエラー: {e}")
+
+async def review_code_async(code: str,
+    language: str = None,
+    provider: str = None,
+    model: str = None,
+    **kwargs) -> dict:
+    """
+    コードレビュー（非同期版）
+    
+    Args:
+        code: レビュー対象コード
+        language: プログラミング言語
+        provider: プロバイダー名
+        model: モデル名
+        **kwargs: 追加パラメータ
+        
+    Returns:
+        dict: 解析されたレビュー結果
+    """
+    try:
+        # テンプレート変数を準備
+        template_vars = {
+            'code': code,
+            'language': language or 'unknown'
+        }
+        template_vars.update(kwargs.get('template_vars', {}))
+        
+        result = await execute_llm_task_async(
+            task_type=TaskType.CODE_REVIEW,
+            prompt=f"以下のコードをレビューしてください:\n\n```{language or ''}\n{code}\n```",
+            template_name='code_review',
+            template_vars=template_vars,
+            provider=provider,
+            model=model,
+            **kwargs
+        )
+        
+        if result.success:
+            return result.parsed_content
+        else:
+            raise LLMException(f"コードレビューエラー: {result.error}")
+            
+    except Exception as e:
+        raise LLMException(f"コードレビューエラー: {e}")
+
+def get_package_info() -> dict:
+    """
+    パッケージ情報を取得
+    
+    Returns:
+        dict: パッケージ情報
+    """
+    try:
+        # サービス統計を取得
+        llm_service = get_llm_service()
+        service_stats = llm_service.get_service_stats()
+        
+        # プロバイダー情報を取得
+        factory = get_llm_factory()
+        available_providers = factory.get_available_providers()
+        
+        return {
+            'version': __version__,
+            'author': __author__,
+            'description': __description__,
+            'available_providers': available_providers,
+            'service_stats': service_stats,
+            'components': {
+                'factory': bool(factory),
+                'template_manager': bool(get_prompt_template_manager()),
+                'response_parser': bool(get_response_parser()),
+                'llm_service': bool(llm_service)
+            }
+        }
+        
+    except Exception as e:
+        return {
+            'version': __version__,
+            'author': __author__,
+            'description': __description__,
+            'error': str(e)
+        }
+
+# パッケージレベル設定
+def configure_package(**kwargs):
+    """
+    パッケージレベル設定
+    
+    Args:
+        **kwargs: 設定パラメータ
+    """
+    try:
+        from ..core.logger import get_logger
+        logger = get_logger(__name__)
+        
+        # 設定を適用
+        if 'log_level' in kwargs:
+            logger.setLevel(kwargs['log_level'])
+        
+        if 'default_provider' in kwargs:
+            factory = get_llm_factory()
+            factory.set_default_provider(kwargs['default_provider'])
+        
+        if 'template_directory' in kwargs:
+            template_manager = get_prompt_template_manager()
+            template_manager.set_template_directory(kwargs['template_directory'])
+        
+        logger.info(f"パッケージ設定を更新しました: {kwargs}")
+        
+    except Exception as e:
+        print(f"パッケージ設定エラー: {e}")
+        raise
+
+# 開発・デバッグ用
+def debug_info() -> dict:
+    """
+    デバッグ情報を取得
+    
+    Returns:
+        dict: デバッグ情報
+    """
+    try:
+        import sys
+        import platform
+        
+        info = {
+            'package_info': get_package_info(),
+            'python_version': sys.version,
+            'platform': platform.platform(),
+            'available_modules': []
+        }
+        
+        # 利用可能なモジュールをチェック
+        modules_to_check = ['openai', 'anthropic', 'requests', 'aiohttp', 'jinja2']
+        for module_name in modules_to_check:
+            try:
+                __import__(module_name)
+                info['available_modules'].append(module_name)
+            except ImportError:
+                pass
+        
+        return info
+        
+    except Exception as e:
+        return {'error': str(e)}
+
+# 自動初期化（オプション）
+try:
+    # 環境変数で自動初期化を制御
+    import os
+    if os.getenv('LLM_AUTO_INIT', 'false').lower() == 'true':
+        initialize_llm_package()
+except Exception:
+    # 初期化エラーは無視（手動初期化を想定）
+    pass
+
+#def get_available_providers() -> List[str]:
+#    """利用可能なプロバイダーを取得（便利関数）"""
+#    factory = get_llm_factory()
+#    return factory.get_available_providers()
+
+def validate_llm_config(config: LLMConfig) -> bool:
+    """LLM設定を検証（便利関数）"""
+    try:
+        if not config:
+            return False
+        if not config.model:
+            return False
+        if config.temperature < 0 or config.temperature > 2:
+            return False
+        if config.max_tokens <= 0:
+            return False
+        return True
+    except Exception:
+        return False

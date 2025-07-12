@@ -19,12 +19,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 
 from .logger import get_logger
-from .config_manager import get_config
+#from .config_manager import get_config
 from ..utils.file_utils import FileUtils
 from ..utils.text_utils import TextUtils
 from ..utils.validation_utils import ValidationUtils
 
 logger = get_logger(__name__)
+
+def get_config(*args, **kwargs):
+    from .config_manager import get_config
+    return get_config(*args, **kwargs)
 
 @dataclass
 class FileInfo:

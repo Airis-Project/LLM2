@@ -79,6 +79,8 @@ def check_components_availability():
         # Core components
         try:
             from . import core
+            # 例外クラスの互換性チェック
+            from src.core.exceptions import LLMCodeAssistantError, LLMSystemError
             status['core'] = True
             logger.info("coreコンポーネント: 利用可能")
         except ImportError as e:
@@ -113,19 +115,32 @@ def check_components_availability():
             logger.warning(f"utilsコンポーネント: 利用不可 ({e})")
         
         # ⭐ LLM可用性チェック
-        try:
-            from .llm_client_v2 import EnhancedLLMClient
-            client = EnhancedLLMClient()
-            if client.is_available():
-                models = client.list_available_models()
-                status['llm_models'] = len(models)
-                logger.info(f"LLMモデル: {len(models)}個利用可能")
-            else:
+        if status.get('llm', False):
+            try:
+                from .llm_client_v2 import EnhancedLLMClient
+                client = EnhancedLLMClient()
+                try:
+                    if client.is_available():
+                        models = client.get_available_models()
+                        status['llm_models'] = len(models)
+                        logger.info(f"LLMモデル: {len(models)}個利用可能")
+                    else:
+                        status['llm_models'] = 0
+                        logger.warning("利用可能なLLMプロバイダーが見つかりません")
+                except Exception as model_error:
+                    # フォールバック: 基本的なモデル数チェック
+                    try:
+                        models = client.get_available_models()
+                        status['llm_models'] = len(models)
+                        logger.info(f"LLMモデル: {len(models)}個利用可能（基本チェック）")
+                    except Exception:
+                        status['llm_models'] = 0
+                        logger.warning(f"LLMモデル情報取得失敗: {model_error}")
+            except Exception as e:
                 status['llm_models'] = 0
-                logger.warning("利用可能なLLMプロバイダーが見つかりません")
-        except Exception as e:
+                logger.warning(f"LLM可用性チェック失敗: {e}")
+        else:
             status['llm_models'] = 0
-            logger.warning(f"LLM可用性チェック失敗: {e}")
         
     except Exception as e:
         logger.error(f"コンポーネントチェックエラー: {e}")
@@ -173,23 +188,23 @@ __all__ = [
 def __getattr__(name):
     """遅延インポート"""
     if name == 'EnhancedLLMClient':
-        from .llm_client_v2 import EnhancedLLMClient
+        from src.llm_client_v2 import EnhancedLLMClient
         return EnhancedLLMClient
     
     elif name == 'LLMService':
-        from .services.llm_service import LLMService
+        from src.services.llm_service import LLMService
         return LLMService
     
     elif name == 'MainWindow':
-        from .ui.main_window import MainWindow
+        from src.ui.main_window import MainWindow
         return MainWindow
     
     elif name == 'ConfigManager':
-        from .core.config_manager import ConfigManager
+        from src.core.config_manager import ConfigManager
         return ConfigManager
     
     elif name == 'EventBus':
-        from .core.event_system import EventBus
+        from src.core.event_system import EventBus
         return EventBus
     
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")

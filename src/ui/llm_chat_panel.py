@@ -15,7 +15,8 @@ from PyQt6.QtWidgets import (
     QPushButton, QComboBox, QLabel, QSplitter, QGroupBox,
     QScrollArea, QFrame, QProgressBar, QSpinBox, QDoubleSpinBox,
     QCheckBox, QTabWidget, QListWidget, QListWidgetItem,
-    QMessageBox, QFileDialog, QToolButton, QMenu, QAction
+    QMessageBox, QFileDialog, QToolButton, QMenu, QAction,
+    QInputDialog
 )
 from PyQt6.QtCore import (
     Qt, QThread, pyqtSignal, QTimer, QSize,
@@ -44,9 +45,9 @@ from src.core.config_manager import get_config
 from src.core.event_system import get_event_system, Event
 
 # UIコンポーネント
-from src.ui.components.chat_message_widget import ChatMessageWidget
-from src.ui.components.model_selector_widget import ModelSelectorWidget
-from src.ui.components.prompt_template_widget import PromptTemplateWidget
+from src.ui.components.chat_message_widget import ChatMessage
+from src.ui.components.model_selector_widget import ModelSelector
+from src.ui.components.prompt_template_widget import PromptTemplate
 
 # ユーティリティ
 from src.utils.text_utils import TextUtils

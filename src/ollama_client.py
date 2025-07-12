@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#src/ollama_client.py
 """
 Ollama クライアント
 ローカルLLMとの通信を管理
@@ -28,6 +29,9 @@ class OllamaClient:
             'codellama:7b': 180,      # 3分
             'phi4:14b': 600,          # 10分
             'wizardcoder:33b': 1200,  # 20分 ⭐ 重要！
+            'codellama:70b': 1200,    # 20分
+            'llama3.1:405b':1200,     # 20分
+            'llama3.3:70b':1200,      # 20分
             'default': 300            # 5分（デフォルト）
         }
         

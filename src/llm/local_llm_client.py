@@ -9,8 +9,8 @@ import json
 import aiohttp
 import asyncio
 from typing import Iterator, Dict, Any, Optional, List, AsyncIterator
-from .base_llm import BaseLLM, LLMConfig, LLMRole
-from ..core.logger import get_logger
+from src.llm.base_llm import BaseLLM, LLMConfig, LLMRole
+from src.core.logger import get_logger
 
 class LocalLLMClient(BaseLLM):
     """ローカルLLMクライアント（Ollama対応）"""

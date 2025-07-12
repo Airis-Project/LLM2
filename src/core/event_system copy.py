@@ -654,3 +654,10 @@ event_system = EventSystem()
 def get_event_system() -> EventSystem:
     """グローバルイベントシステムを取得"""
     return event_system
+
+def initialize_event_system():
+    """イベントシステムを初期化"""
+    global event_system
+    if event_system is None:
+        event_system = EventSystem()
+    return event_system

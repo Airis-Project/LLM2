@@ -1,3 +1,4 @@
+#src/core/error_handler.py
 """
 エラーハンドリングシステム
 """
@@ -5,7 +6,7 @@ import traceback
 import logging
 from typing import Optional, Dict, Any, Callable, List
 from datetime import datetime
-from .exceptions import (
+from src.core.exceptions import (
     LLMCodeAssistantError,
     is_recoverable_error,
     format_error_message,

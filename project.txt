@@ -6,7 +6,7 @@ LLM-Code-Assistant/
 ├── .env.example
 ├── config/
 │   ├── __init__.py
-│   ├── default_settings.json
+│   ├── default_config.json
 │   └── logging_config.yaml
 ├── data/
 │   ├── __init__.py

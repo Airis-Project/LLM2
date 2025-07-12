@@ -1,3 +1,4 @@
+#plugins/code_formatter/formatter_plugin.py
 """
 コードフォーマッタープラグイン
 様々な言語のコードフォーマット機能を提供するプラグイン

@@ -1,3 +1,4 @@
+#plugins/code_formatter/main.py
 """
 コードフォーマッタープラグイン
 コードの整形機能を提供

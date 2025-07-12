@@ -16,8 +16,11 @@ import re
 import json
 from pathlib import Path
 
-from ..core.config_manager import ConfigManager
-from ..utils.file_utils import FileUtils
+from src.utils.file_utils import FileUtils
+
+def get_config_manager():
+        from src.core.config_manager import ConfigManager
+        return ConfigManager()
 
 
 class LogLevel(Enum):
@@ -213,7 +216,7 @@ class OutputPanel(ttk.Frame):
         self.logger = logging.getLogger(__name__)
         
         # 設定管理
-        self.config_manager = ConfigManager()
+        self.config_manager = get_config_manager()
         
         # コールバック関数
         self.on_error_click: Optional[Callable[[LogEntry], None]] = None

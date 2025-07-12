@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+#src/model_selector.py
 """
 スマートモデル選択器（軽量化版）
 """
@@ -8,7 +9,7 @@ import requests
 import json
 from enum import Enum
 from typing import Dict, Any, Optional, List
-from .ollama_client import OllamaClient
+from src.ollama_client import OllamaClient
 
 logger = logging.getLogger(__name__)
 
@@ -33,39 +34,39 @@ class SmartModelSelector:
         # 軽量化されたモデル設定（小さなモデルを優先）
         self.model_preferences = {
             TaskType.QUICK_RESPONSE: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["codellama:70b", "starcoder:7b", "phi4:14b", "wizardcoder:33b"]
             },
             TaskType.CODE_GENERATION: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["tarcoder:7b", "wizardcoder:33b", "phi4:14b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["codellama:70b", "starcoder:7b", "wizardcoder:33b", "phi4:14b"]
             },
             TaskType.CODE_EXPLANATION: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["tarcoder:7b", "wizardcoder:33b", "phi4:14b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["codellama:70b", "starcoder:7b", "wizardcoder:33b", "phi4:14b"]
             },
             TaskType.DEBUGGING: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["tarcoder:7b", "wizardcoder:33b", "phi4:14b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["codellama:70b", "starcoder:7b", "wizardcoder:33b", "phi4:14b"]
             },
             TaskType.REFACTORING: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["tarcoder:7b", "wizardcoder:33b", "phi4:14b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["codellama:70b", "starcoder:7b", "wizardcoder:33b", "phi4:14b"]
             },
             TaskType.COMPLEX_ANALYSIS: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["wizardcoder:33b", "tarcoder:7b", "phi4:14b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["llama3.3:70b", "codellama:70b", "wizardcoder:33b", "starcoder:7b", "phi4:14b"]
             },
             TaskType.GENERAL: {
-                "speed": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "balanced": ["tarcoder:7b", "phi4:14b", "wizardcoder:33b"],
-                "quality": ["tarcoder:7b", "wizardcoder:33b", "phi4:14b"]
+                "speed": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "balanced": ["starcoder:7b", "phi4:14b", "wizardcoder:33b"],
+                "quality": ["llama3.3:70b", "codellama:70b", "starcoder:7b", "wizardcoder:33b", "phi4:14b"]
             }
         }
         
@@ -85,7 +86,7 @@ class SmartModelSelector:
             filtered_models = []
             for model in self._available_models:
                 model_lower = model.lower()
-                if not any(size in model_lower for size in ['70b', '72b', '34b']):
+                if not any(size in model_lower for size in ['72b', '34b']):
                     filtered_models.append(model)
             
             self._available_models = filtered_models
@@ -111,7 +112,7 @@ class SmartModelSelector:
             
             if not self._available_models:
                 logger.warning("利用可能なモデルがありません")
-                return "tarcoder:7b"  # フォールバック
+                return "starcoder:7b"  # フォールバック
             
             # 優先度に基づくモデル候補取得
             candidates = self.model_preferences.get(task_type, {}).get(priority, [])
@@ -129,11 +130,11 @@ class SmartModelSelector:
                 logger.warning(f"適切なモデルが見つかりません - フォールバック: {fallback_model}")
                 return fallback_model
             
-            return "tarcoder:7b"  # 最終フォールバック
+            return "starcoder:7b"  # 最終フォールバック
             
         except Exception as e:
             logger.error(f"モデル選択エラー: {e}")
-            return "tarcoder:7b"
+            return "starcoder:7b"
     
     def get_available_models(self) -> List[str]:
         """利用可能なモデル一覧取得"""

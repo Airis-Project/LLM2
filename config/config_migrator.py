@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
+#config/config_migrator.py
 """
 設定マイグレーションシステム完全版
 バージョン間の設定変更を自動処理
 """
+_config_manager_instance = None
 
 import json
 from typing import Dict, Any, List, Callable, Optional, Tuple
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-import re
 from packaging import version
 
 from src.core.logger import get_logger

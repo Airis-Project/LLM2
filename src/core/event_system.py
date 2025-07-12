@@ -18,9 +18,18 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 
 from .logger import get_logger
-from .config_manager import get_config
 
 logger = get_logger(__name__)
+
+# 遅延インポート用の関数
+def _get_config():
+    """設定を遅延インポートで取得"""
+    try:
+        from .config_manager import get_config
+        return get_config
+    except ImportError:
+        logger.warning("設定管理が利用できません")
+        return lambda *args, **kwargs: {}
 
 class EventPriority(Enum):
     """イベント優先度"""
@@ -606,8 +615,10 @@ class EventSystem:
     
     def __init__(self):
         """初期化"""
-        config = get_config()
-        event_config = config.get('event_system', {})
+        # 遅延インポートで設定を取得
+        get_config_func = _get_config()
+        config = get_config_func()
+        event_config = config.get('event_system', {}) if config else {}
         
         max_workers = event_config.get('max_workers', 4)
         self.event_bus = EventBus(max_workers)
@@ -649,8 +660,18 @@ class EventSystem:
         self.logger.info("イベントシステムをクリーンアップしました")
 
 # グローバルイベントシステムインスタンス
-event_system = EventSystem()
+_event_system = None
 
 def get_event_system() -> EventSystem:
     """グローバルイベントシステムを取得"""
-    return event_system
+    global _event_system
+    if _event_system is None:
+        _event_system = EventSystem()
+    return _event_system
+
+def initialize_event_system():
+    """イベントシステムを初期化"""
+    global _event_system
+    if _event_system is None:
+        _event_system = EventSystem()
+    return _event_system

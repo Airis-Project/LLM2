@@ -48,8 +48,8 @@ def check_llm_availability():
         
         client = EnhancedLLMClient()
         
-        if client.is_available():
-            models = client.list_available_models()
+        if client.get_model_info():
+            models = client.get_available_models()
             print(f"✅ LLMサービス利用可能 ({len(models)}個のモデル)")
             
             # 推奨モデルの確認

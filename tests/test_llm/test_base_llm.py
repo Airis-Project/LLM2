@@ -14,9 +14,9 @@ from unittest.mock import Mock, patch, MagicMock, AsyncMock
 from typing import Dict, Any, List, Optional, AsyncGenerator
 
 # テスト対象のインポート
-from llm.base_llm import BaseLLM, LLMResponse, LLMConfig, LLMError
-from core.config_manager import ConfigManager
-from core.logger import Logger
+from src.llm.base_llm import BaseLLM, LLMResponse, LLMConfig, LLMError
+from src.core.config_manager import ConfigManager
+from src.core.logger import Logger
 
 # テスト用のインポート
 from tests.test_core import (

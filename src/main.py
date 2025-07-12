@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
+#src/main.py
 """
 メインアプリケーションエントリーポイント
 LLMコードアシスタントの起動とシステム初期化を管理
 """
-
 import sys
-import asyncio
 import signal
 from pathlib import Path
 from typing import Optional
@@ -14,10 +13,99 @@ from typing import Optional
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# 循環インポートを避けるため、必要なものだけインポート
+from src.core.logger import get_logger
+from src.core.exceptions import LLMSystemError, LLMError, ConfigError
+
+# グローバル変数
+logger = None
+config_manager = None
+event_system = None
+llm_factory = None
+llm_service = None
+
+def _initialize_config():
+    """設定管理を遅延初期化"""
+    global config_manager
+    try:
+        from src.core.config_manager import ConfigManager
+        config_manager = ConfigManager()
+        config_manager.initialize()
+        return config_manager
+    except Exception as e:
+        print(f"設定管理初期化エラー: {e}")
+        return None
+
+def _initialize_event_system():
+    """イベントシステムを遅延初期化"""
+    global event_system
+    try:
+        from src.core.event_system import EventSystem
+        event_system = EventSystem()
+        return event_system
+    except Exception as e:
+        print(f"イベントシステム初期化エラー: {e}")
+        return None
+
+def _initialize_llm_services():
+    """LLMサービスを遅延初期化"""
+    global llm_factory, llm_service
+    try:
+        from src.llm.llm_factory import LLMFactory
+        from src.llm.llm_service import LLMServiceCore
+        
+        llm_factory = LLMFactory()
+        llm_service = LLMServiceCore()
+        
+        return llm_factory, llm_service
+    except Exception as e:
+        print(f"LLMサービス初期化エラー: {e}")
+        return None, None
+
+def _initialize_ui():
+    """UIを遅延初期化"""
+    try:
+        from src.ui.gui import create_gui
+        return create_gui
+    except Exception as e:
+        print(f"UI初期化エラー: {e}")
+        return None
+
+def setup_application():
+    """アプリケーションの初期設定を行う"""
+    global logger
+    
+    try:
+        # ログシステムの初期化
+        from src.core.logger import configure_logging, LogConfig, LogLevel, LogFormat
+        
+        log_config = LogConfig(
+            level=LogLevel.INFO,
+            format_type=LogFormat.DETAILED,
+            console_enabled=True,
+            file_enabled=True
+        )
+        configure_logging(log_config)
+        logger = get_logger(__name__)
+        logger.info("アプリケーション初期化を開始します")
+    except Exception as e:
+        print(f"アプリケーション初期化エラー: {e}")
+        return None, None
+
 # コアシステムインポート
-from src.core.logger import get_logger, setup_logging
-from src.core.config_manager import get_config, ConfigManager
+from src.core.logger import get_logger, _setup_logging
+#from src.core.config_manager import get_config, ConfigManager
 from src.core.event_system import get_event_system, Event
+from src.core.exceptions import LLMError
+
+def get_config_manager():
+    from src.core.config_manager import ConfigManager
+    return ConfigManager()
+
+def get_config():
+    from src.core.config_manager import get_config
+    return get_config()
+
 
 # LLMシステムインポート (新システム)
 from src.llm import (
@@ -39,7 +127,6 @@ from src.services.file_service import FileService
 from src.services.project_service import ProjectService
 
 # ユーティリティインポート
-from src.utils.system_utils import SystemUtils
 from src.utils.performance_monitor import PerformanceMonitor
 
 logger = get_logger(__name__)
@@ -67,7 +154,7 @@ class ApplicationManager:
             logger.info("=== LLMコードアシスタント初期化開始 ===")
             
             # 1. ログシステム初期化
-            setup_logging()
+            _setup_logging()
             logger.info("✅ ログシステム初期化完了")
             
             # 2. 設定管理初期化
@@ -136,7 +223,7 @@ class ApplicationManager:
                         llm_config
                     )
                     logger.info(f"✅ {preferred_provider} クライアント作成完了")
-                except Exception as e:
+                except LLMError as e:
                     logger.warning(f"{preferred_provider} 初期化失敗: {e}")
                     # フォールバック処理
                     self.llm_client = self._create_fallback_client(available_providers, llm_config)
@@ -153,9 +240,12 @@ class ApplicationManager:
             
             return True
             
-        except Exception as e:
+        except LLMError as e:
             logger.error(f"LLMシステム初期化エラー: {e}")
             return False
+        except Exception as e:
+            logger.error(f"LLMシステム初期化エラー: {e}")
+        return False
     
     def _create_fallback_client(self, available_providers: list, config: LLMConfig):
         """フォールバッククライアント作成"""

@@ -13,12 +13,16 @@ import aiohttp
 import anthropic
 from anthropic import AsyncAnthropic
 
-from .base_llm import BaseLLM, LLMMessage, LLMResponse, LLMConfig, LLMStatus, LLMRole
-from ..core.logger import get_logger
-from ..core.config_manager import get_config
-from ..utils.validation_utils import ValidationUtils
+from src.llm.base_llm import BaseLLM, LLMMessage, LLMResponse, LLMConfig, LLMStatus, LLMRole
+from src.core.logger import get_logger
+#from ..core.config_manager import get_config
+from src.utils.validation_utils import ValidationUtils
 
 logger = get_logger(__name__)
+
+def get_config(*args, **kwargs):
+    from ..core.config_manager import get_config
+    return get_config(*args, **kwargs)
 
 class ClaudeClient(BaseLLM):
     """Claude APIクライアントクラス"""

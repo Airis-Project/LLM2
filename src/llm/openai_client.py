@@ -15,8 +15,12 @@ from openai import AsyncOpenAI
 
 from .base_llm import BaseLLM, LLMMessage, LLMResponse, LLMConfig, LLMStatus, LLMRole
 from ..core.logger import get_logger
-from ..core.config_manager import get_config
+#from ..core.config_manager import get_config
 from ..utils.validation_utils import ValidationUtils
+
+def get_config(*args, **kwargs):
+    from ..core.config_manager import get_config
+    return get_config(*args, **kwargs)
 
 logger = get_logger(__name__)
 

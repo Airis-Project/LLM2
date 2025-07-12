@@ -1,0 +1,94 @@
+# requirements.txt
+# LLM Chat Assistant - Python 3.11.9 対応版
+# 必要なライブラリとその互換バージョン
+
+# Core GUI Framework
+tkinter-tooltip==1.1.0
+
+# HTTP Client Libraries
+requests==2.31.0
+aiohttp==3.9.1
+httpx==0.25.2
+
+# LLM Provider APIs
+openai==1.6.1
+anthropic==0.8.1
+
+# Data Processing
+pyyaml==6.0.1
+python-dotenv==1.0.0
+jsonschema==4.20.0
+
+# Text Processing
+markdown==3.5.1
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Async Support
+asyncio-throttle==1.0.2
+asyncio-compat==0.1.2
+
+# File Handling
+pathlib2==2.3.7
+chardet==5.2.0
+
+# Date/Time Utilities
+python-dateutil==2.8.2
+
+# Logging and Configuration
+colorlog==6.8.0
+configparser==6.0.0
+
+# Development and Testing (Optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-mock==3.12.0
+
+# Type Hints Support
+typing-extensions==4.8.0
+
+# Optional: Local LLM Support (Ollama)
+# ollama==0.1.7
+
+# Optional: Advanced Text Processing
+# spacy==3.7.2
+# nltk==3.8.1
+
+# Optional: Database Support (for conversation history)
+# sqlite3 (built-in with Python)
+# sqlalchemy==2.0.23
+
+# Optional: Web Scraping (for enhanced file loading)
+# selenium==4.15.2
+# webdriver-manager==4.15.1
+
+# Optional: Image Processing (for future features)
+# pillow==10.1.0
+
+# Optional: Audio Processing (for future voice features)
+# pyaudio==0.2.11
+# speech-recognition==3.10.0
+
+# Optional: Encryption (for API key security)
+# cryptography==41.0.8
+
+# Optional: Progress Bars
+# tqdm==4.66.1
+
+# Optional: Rich Text Display
+# rich==13.7.0
+
+# System Dependencies (Linux/Mac)
+# For Windows users, these might need different versions:
+# - python3-tk (system package)
+# - python3-dev (system package)
+
+# Platform-specific requirements
+# Windows:
+# pywin32==306; sys_platform == "win32"
+
+# macOS:
+# pyobjc-framework-Cocoa==10.0; sys_platform == "darwin"
+
+# Linux:
+# python3-tkinter; sys_platform == "linux"

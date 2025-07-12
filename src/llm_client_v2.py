@@ -1,28 +1,111 @@
 # 改良版LLMクライアント
+#src/llm_client_v2.py
 #python src/llm_client_v2.py
-# llm_client_v2.pyを絶対インポートに修正
 # -*- coding: utf-8 -*-
 """
 拡張LLMクライアント v2.0
 スマートモデル選択、性能監視、エラーハンドリングを統合
 """
 
-import time
+import asyncio
+import json
 import logging
-import sys
 import os
-from typing import Dict, Any, Optional, List
+import sys
+import time
+from datetime import datetime, timedelta
+from typing import Dict, List, Optional, Any, Union, AsyncGenerator, Callable
+from dataclasses import dataclass, asdict
+from enum import Enum
+import threading
+from concurrent.futures import ThreadPoolExecutor
+import queue
 
 # プロジェクトルートをパスに追加
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(current_dir)
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
+try:
+    from .model_selector import SmartModelSelector, TaskType
+    from .ollama_client import OllamaClient
+except ImportError as e:
+    print(f"Import error: {e}")
+    # フォールバック用の簡単なクラス
+    class TaskType(Enum):
+        GENERAL = "general"
+        CODE_GENERATION = "code_generation"
+    
+    class SmartModelSelector:
+        def __init__(self, config_path=None):
+            pass
+        def select_model(self, **kwargs):
+            return "starcoder:7b"
+        def get_available_models(self):
+            return ["starcoder:7b"]
+    class OllamaClient:
+        def __init__(self):
+            pass
+        def generate(self, **kwargs):
+            return {'success': False, 'error': 'Ollama not available'}
+        def list_models(self):
+            return []
+        def is_available(self):
+            return False
 
-# 絶対インポート
-from src.model_selector import SmartModelSelector, TaskType
+# コアインポート
+from src.core.logger import get_logger
+from src.core.exceptions import (
+    LLMError, LLMConnectionError, LLMTimeoutError, 
+    LLMRateLimitError, LLMResponseError
+)
+
+# LLMクライアントインポート
 from src.ollama_client import OllamaClient
+from src.llm.openai_client import OpenAIClient
 
+@dataclass
+class LLMRequest:
+    """LLMリクエスト"""
+    prompt: str
+    model: Optional[str] = None
+    temperature: float = 0.7
+    max_tokens: Optional[int] = None
+    stream: bool = False
+    system_prompt: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+@dataclass
+class LLMResponse:
+    """LLMレスポンス"""
+    content: str
+    model: str
+    usage: Dict[str, Any]
+    metadata: Dict[str, Any]
+    timestamp: datetime
+    request_id: Optional[str] = None
+    error: Optional[str] = None
+
+class ClientType(Enum):
+    """クライアントタイプ"""
+    OLLAMA = "ollama"
+    OPENAI = "openai"
+    ANTHROPIC = "anthropic"
+# ログ設定
+try:
+    from src.core.logger import get_logger
+    logger = get_logger(__name__)
+except ImportError:
+    # フォールバック: 標準ログシステム
+    import logging
+    logger = logging.getLogger(__name__)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 class EnhancedLLMClient:
@@ -30,8 +113,33 @@ class EnhancedLLMClient:
     
     def __init__(self, config_path: Optional[str] = None):
         """クライアント初期化"""
+        self.logger = logger
+        try:
+            self.model_selector = SmartModelSelector(config_path)
+        except Exception as e:
+            self.logger.warning(f"モデルセレクター初期化失敗: {e}")
+            self.model_selector = SmartModelSelector()  # フォールバック
+        
+        try:
+            self.ollama_client = OllamaClient()
+        except Exception as e:
+            self.logger.warning(f"Ollamaクライアント初期化失敗: {e}")
+            self.ollama_client = OllamaClient()  # フォールバック
+
+        try:
+            from src.core.logger import get_logger
+            self.logger = get_logger(__name__)
+        except ImportError:
+            # フォールバック: 標準ログシステム
+            self.logger = logging.getLogger(__name__)
+        
         self.model_selector = SmartModelSelector(config_path)
         self.ollama_client = OllamaClient()
+        
+        # 既存のコードとの互換性のための属性
+        self.client_type = ClientType.OLLAMA.value
+        self.current_model = None
+        self.client = self.ollama_client
         
         # 性能監視
         self.performance_stats = {
@@ -44,6 +152,32 @@ class EnhancedLLMClient:
         }
         
         logger.info("拡張LLMクライアントを初期化しました")
+    def is_available(self) -> bool:
+        """可用性チェック - 追加"""
+        try:
+            return self.ollama_client.is_available()
+        except Exception as e:
+            self.logger.warning(f"可用性チェック失敗: {e}")
+            return False
+    
+    def get_capabilities(self) -> Dict[str, bool]:
+        """機能取得 - 追加"""
+        return {
+            'streaming': True,
+            'chat': True,
+            'embeddings': False,
+            'function_calling': False,
+            'vision': False,
+            'async': False
+        }
+    
+    def get_limits(self) -> Dict[str, Any]:
+        """制限情報取得 - 追加"""
+        return {
+            'max_tokens': 4096,
+            'rate_limit': 60,
+            'context_window': 4096
+        }
     
     def generate_code(
         self,
@@ -74,7 +208,9 @@ class EnhancedLLMClient:
                 priority=priority,
                 context_length=len(prompt)
             )
-            
+            # 現在のモデルを更新
+            self.current_model = selected_model
+
             logger.info(f"選択されたモデル: {selected_model} (タスク: {task_type.value}, 優先度: {priority})")
             
             # モデル使用統計更新
@@ -186,8 +322,63 @@ class EnhancedLLMClient:
     
     def get_available_models(self) -> List[str]:
         """利用可能なモデル一覧取得"""
-        return self.model_selector.get_available_models()
-    
-    def get_model_info(self, model_name: str) -> Dict[str, Any]:
+        try:
+            if self.model_selector:
+                return self.model_selector.get_available_models()
+            else:
+                # フォールバック: Ollamaクライアントから直接取得
+                models = self.ollama_client.list_models()
+                return [model.get('name', '') for model in models]
+        except Exception as e:
+            self.logger.error(f"モデル一覧取得エラー: {e}")
+            # 最終フォールバック: デフォルトモデルリスト
+            return ["starcoder:7b", "codellama:7b", "phi4:14b"]
+        
+    def get_model_info(self, model_name: Optional[str] = None) -> Dict[str, Any]:
         """モデル情報取得"""
-        return self.model_selector.get_model_info(model_name)
+        try:
+            if model_name is None:
+                model_name = self.current_model or "default"
+            
+            # 基本情報
+            info = {
+                'model': model_name,
+                'provider': self.client_type,
+                'status': 'available' if self.is_available() else 'unavailable',
+                'capabilities': self.get_capabilities(),
+                'limits': self.get_limits()
+            }
+            
+            return info
+            
+        except Exception as e:
+            self.logger.error(f"モデル情報取得エラー: {e}")
+            return {
+                'model': model_name or 'unknown',
+                'provider': self.client_type,
+                'status': 'error',
+                'error': str(e)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"モデル情報取得エラー: {e}")
+            return {
+                'model': model_name or 'unknown',
+                'provider': self.client_type,
+                'status': 'error',
+                'error': str(e)
+            }
+def shutdown(self):
+        """クライアント終了処理"""
+        try:
+            if hasattr(self.ollama_client, 'shutdown'):
+                self.ollama_client.shutdown()
+            self.logger.info("LLMクライアントを終了しました")
+        except Exception as e:
+            self.logger.error(f"クライアント終了エラー: {e}")
+logger = get_logger(__name__)
+
+# エクスポート
+__all__ = [
+    'EnhancedLLMClient', 'LLMRequest', 'LLMResponse', 'ClientType'
+]

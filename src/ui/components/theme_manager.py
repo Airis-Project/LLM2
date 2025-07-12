@@ -14,9 +14,12 @@ from PyQt6.QtCore import QObject, pyqtSignal, QSettings
 from PyQt6.QtGui import QPalette, QColor, QFont
 from PyQt6.QtWidgets import QApplication
 
-from ...core.logger import get_logger
-from ...core.config_manager import ConfigManager
+from src.core.logger import get_logger
+#from src.core.config_manager import ConfigManager
 
+def get_config_manager():
+    from src.core.config_manager import ConfigManager
+    return ConfigManager()
 
 class ThemeType(Enum):
     """テーマタイプ"""
@@ -122,10 +125,10 @@ class ThemeManager(QObject):
     
     theme_changed = pyqtSignal(Theme)
     
-    def __init__(self, config_manager: ConfigManager = None):
+    def __init__(self, config_manager: get_config_manager = None):
         super().__init__()
         self.logger = get_logger(__name__)
-        self.config_manager = config_manager or ConfigManager()
+        self.config_manager = config_manager or get_config_manager()
         
         # 設定
         self.settings = QSettings()

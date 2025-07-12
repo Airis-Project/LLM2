@@ -1,5 +1,5 @@
-# resume_session.py
 #!/usr/bin/env python3
+# resume_session.py
 """
 セッション再開用スクリプト
 使用方法: python resume_session.py

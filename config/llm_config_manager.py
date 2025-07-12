@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+#config/llm_config_manager.py
 """
 LLM設定管理システム
 新LLMシステムと統合された設定管理
 """
 
+import json
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 from pathlib import Path
@@ -15,8 +17,27 @@ from src.llm import (
     create_llm_client,
     validate_llm_config
 )
-from src.core.logger import get_logger
 
+try:
+    from src.core.logger import get_logger
+    logger = get_logger(__name__)
+except ImportError:
+    import logging
+    logger = logging.getLogger(__name__)
+
+class LLMConfigManager:
+    """LLM設定管理"""
+    
+    def __init__(self, config_manager=None):
+        self.config_manager = config_manager
+        self._provider_configs: Dict[str, ProviderConfig] = {}
+        self._default_configs = self._create_default_configs()
+        
+        # 初期化（config_managerがNoneでもエラーにしない）
+        if self.config_manager:
+            self.load_llm_configs()
+        else:
+            logger.warning("ConfigManagerが未設定、デフォルト設定のみ使用")
 logger = get_logger(__name__)
 
 @dataclass

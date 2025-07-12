@@ -180,7 +180,7 @@ class MyPlugin(PluginBase):
 ⚙️ 設定
 設定ファイル
 設定は以下のファイルで管理されます：
-    config/default_settings.json: デフォルト設定
+    config/default_config.json: デフォルト設定
     config/user_settings.json: ユーザー設定
     config/logging_config.yaml: ログ設定
     .env: 環境変数（API キーなど）

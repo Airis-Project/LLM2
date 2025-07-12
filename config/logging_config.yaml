@@ -1,5 +1,7 @@
+#config/logging_config.yaml
 # logging_config.yaml - LLM Code Assistant ログ設定
 # Python logging.config.dictConfig() 形式
+
 
 version: 1
 disable_existing_loggers: false

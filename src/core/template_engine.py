@@ -16,10 +16,18 @@ from jinja2 import Environment, FileSystemLoader, Template, TemplateError
 from jinja2.exceptions import TemplateNotFound, TemplateSyntaxError
 
 from .logger import get_logger
-from .config_manager import AppConfig, get_config
+#from .config_manager import AppConfig, get_config
 from ..utils.file_utils import FileUtils
 from ..utils.text_utils import TextUtils
 from ..utils.validation_utils import ValidationUtils
+
+def get_config(*args, **kwargs):
+    from .config_manager import get_config
+    return get_config(*args, **kwargs)
+
+def AppConfig(*args, **kwargs):
+    from .config_manager import AppConfig
+    return AppConfig(*args, **kwargs)
 
 logger = get_logger(__name__)
 

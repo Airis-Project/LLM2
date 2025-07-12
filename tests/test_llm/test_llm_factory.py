@@ -14,13 +14,13 @@ from unittest.mock import Mock, patch, MagicMock
 from typing import Dict, Any, List, Optional
 
 # テスト対象のインポート
-from llm.llm_factory import LLMFactory, LLMType
-from llm.base_llm import BaseLLM, LLMResponse, LLMConfig, LLMError
-from llm.openai_client import OpenAIClient
-from llm.claude_client import ClaudeClient
-from llm.local_llm_client import LocalLLMClient
-from core.config_manager import ConfigManager
-from core.logger import Logger
+from src.llm.llm_factory import LLMFactory, LLMType
+from src.llm.base_llm import BaseLLM, LLMResponse, LLMConfig, LLMError
+from src.llm.openai_client import OpenAIClient
+from src.llm.claude_client import ClaudeClient
+from src.llm.local_llm_client import LocalLLMClient
+from src.core.config_manager import ConfigManager
+from src.core.logger import Logger
 
 # テスト用のインポート
 from tests.test_core import (

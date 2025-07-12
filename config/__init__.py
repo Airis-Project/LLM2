@@ -1,4 +1,4 @@
-# scripts/init.py
+# config/init.py
 """
 LLM Chat System Initialization Script
 システムの初期化とセットアップを行うスクリプト
@@ -16,8 +16,8 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from src.core.logger import setup_logger
-from src.core.config_manager import ConfigManager
-from src.core.config_validator import ConfigValidator
+#from src.core.config_manager import ConfigManager
+from .config_validator import ConfigValidator
 
 
 class SystemInitializer:

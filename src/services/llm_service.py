@@ -8,8 +8,8 @@ import logging
 from typing import Dict, Any, Optional, List, Callable
 from PyQt6.QtCore import QObject, pyqtSignal, QThread, QTimer
 
-from ..llm_client_v2 import EnhancedLLMClient
-from ..core.event_system import EventBus
+from src.llm_client_v2 import EnhancedLLMClient
+from src.core.event_system import EventBus
 
 logger = logging.getLogger(__name__)
 

@@ -10,13 +10,25 @@ from enum import Enum
 import importlib
 from dataclasses import dataclass
 
-from .base_llm import BaseLLM, LLMConfig, LLMRole
-from .openai_client import OpenAIClient
-from .claude_client import ClaudeClient
-from .local_llm_client import LocalLLMClient
-from ..core.logger import get_logger
-from ..core.config_manager import get_config
-from ..utils.validation_utils import ValidationUtils
+from src.llm.base_llm import BaseLLM, LLMConfig, LLMRole
+from src.llm.openai_client import OpenAIClient
+from src.llm.claude_client import ClaudeClient
+from src.llm.local_llm_client import LocalLLMClient
+from src.core.logger import get_logger
+from src.utils.validation_utils import ValidationUtils
+
+#validate_llm_config関数の定義
+def validate_llm_config(config):
+    """LLM設定を検証"""
+    try:
+        if not config:
+            return False
+        if hasattr(config, 'model') and not config.model:
+            return False
+        return True
+    except ImportError as e:
+            logger.warning(f"LLMコンポーネント読み込み失敗: {e}")
+            return None, None, None
 
 logger = get_logger(__name__)
 
@@ -41,6 +53,9 @@ class LLMProviderInfo:
     description: str
     default_config: Optional[Dict[str, Any]] = None
 
+def get_config(*args, **kwargs):
+    from src.core.config_manager import get_config
+    return get_config(*args, **kwargs)
 class LLMFactory:
     """LLMファクトリークラス"""
     
@@ -191,9 +206,9 @@ class LLMFactory:
             raise
     
     def create_client(self, 
-                     provider_name: Optional[str] = None, 
-                     config: Optional[LLMConfig] = None,
-                     **kwargs) -> BaseLLM:
+        provider_name: Optional[str] = None, 
+        config: Optional[LLMConfig] = None,
+        **kwargs) -> BaseLLM:
         """
         LLMクライアントを作成
         
@@ -234,9 +249,9 @@ class LLMFactory:
             raise
     
     async def create_client_async(self, 
-                                 provider_name: Optional[str] = None, 
-                                 config: Optional[LLMConfig] = None,
-                                 **kwargs) -> BaseLLM:
+        provider_name: Optional[str] = None, 
+        config: Optional[LLMConfig] = None,
+        **kwargs) -> BaseLLM:
         """
         LLMクライアントを非同期で作成
         
@@ -293,9 +308,9 @@ class LLMFactory:
             return None
     
     def get_or_create_client(self, 
-                           provider_name: Optional[str] = None, 
-                           config: Optional[LLMConfig] = None,
-                           **kwargs) -> BaseLLM:
+        provider_name: Optional[str] = None, 
+        config: Optional[LLMConfig] = None,
+        **kwargs) -> BaseLLM:
         """
         クライアントを取得または作成
         
@@ -321,9 +336,9 @@ class LLMFactory:
             raise
     
     def _build_config(self, 
-                    provider_info: LLMProviderInfo, 
-                    config: Optional[LLMConfig], 
-                    **kwargs) -> LLMConfig:
+        provider_info: LLMProviderInfo, 
+        config: Optional[LLMConfig], 
+        **kwargs) -> LLMConfig:
         """
         設定を構築
         
@@ -756,8 +771,8 @@ def get_llm_factory() -> LLMFactory:
     return _factory_instance
 
 def create_llm_client(provider_name: Optional[str] = None, 
-                     config: Optional[LLMConfig] = None,
-                     **kwargs) -> BaseLLM:
+    config: Optional[LLMConfig] = None,
+    **kwargs) -> BaseLLM:
     """
     LLMクライアントを作成（便利関数）
     
@@ -773,8 +788,8 @@ def create_llm_client(provider_name: Optional[str] = None,
     return factory.create_client(provider_name, config, **kwargs)
 
 async def create_llm_client_async(provider_name: Optional[str] = None, 
-                                 config: Optional[LLMConfig] = None,
-                                 **kwargs) -> BaseLLM:
+    config: Optional[LLMConfig] = None,
+    **kwargs) -> BaseLLM:
     """
     LLMクライアントを非同期で作成（便利関数）
     
@@ -789,3 +804,6 @@ async def create_llm_client_async(provider_name: Optional[str] = None,
     factory = get_llm_factory()
     return await factory.create_client_async(provider_name, config, **kwargs)
 
+def initialize_llm_factory():
+    """LLMファクトリーを初期化"""
+    return get_llm_factory()

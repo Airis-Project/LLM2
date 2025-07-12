@@ -10,16 +10,19 @@ from typing import Optional, Dict, Any
 import json
 from pathlib import Path
 
-from ..core.logger import Logger
-from ..core.config_manager import ConfigManager
-from ..core.exceptions import LLMChatError
-from ..services.llm_service import LLMService
+from src.core.logger import Logger
+#from src.core.config_manager import ConfigManager
+from src.core.exceptions import LLMChatError
+from src.services.llm_service import LLMService
 
+def get_config_manager():
+    from src.core.config_manager import ConfigManager
+    return ConfigManager()
 
 class CLIInterface:
     """コマンドライン インターフェース"""
     
-    def __init__(self, config_manager: ConfigManager, logger: Logger):
+    def __init__(self, config_manager: get_config_manager, logger: Logger):
         self.config_manager = config_manager
         self.logger = logger
         self.llm_service = None

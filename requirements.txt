@@ -1,34 +1,289 @@
 # requirements.txt
-# Core dependencies
-openai>=1.0.0
-anthropic>=0.7.0
+# Python 3.11.9 対応パッケージリスト
+# LLM統合チャットアプリケーション用依存関係
+
+# === コアライブラリ ===
+# 非同期処理
+asyncio>=3.4.3
+aiohttp>=3.8.5
+aiofiles>=23.2.0
+
+# HTTP クライアント
 requests>=2.31.0
-pydantic>=2.0.0
+httpx>=0.24.1
+
+# JSON/YAML/TOML 処理
+pyyaml==6.0.1
+toml>=0.10.2
+jsonschema>=4.19.0
+
+# === 暗号化・セキュリティ ===
+# 暗号化ライブラリ
+cryptography>=41.0.3
+
+# パスワードハッシュ化
+bcrypt>=4.0.1
+passlib>=1.7.4
+
+# === GUI フレームワーク ===
+# Tkinter は標準ライブラリのため不要
+# カスタムTkinter
+customtkinter>=5.2.0
+
+# アイコン・画像処理
+Pillow>=10.0.0
+
+# === LLM プロバイダー ===
+# OpenAI
+openai>=1.3.0
+
+# Anthropic Claude
+anthropic>=0.3.11
+
+# Google AI
+google-generativeai>=0.3.0
+
+# Cohere
+cohere>=4.32.0
+
+# Hugging Face
+transformers>=4.33.2
+torch>=2.0.1
+tokenizers>=0.13.3
+
+# === データベース ===
+# SQLite は標準ライブラリのため不要
+# SQLAlchemy (ORM)
+sqlalchemy>=2.0.20
+
+# === ログ管理 ===
+# 構造化ログ
+structlog>=23.1.0
+
+# ログローテーション
+loguru>=0.7.0
+
+# === 設定管理 ===
+# 環境変数管理
 python-dotenv>=1.0.0
 
-# Configuration and validation
-jsonschema>=4.17.0
-pyyaml>=6.0
+# 設定検証
+pydantic>=2.3.0
 
-# Logging and utilities
-colorlog>=6.7.0
-rich>=13.0.0
+# === ユーティリティ ===
+# 日付・時刻処理
+python-dateutil>=2.8.2
 
-# CLI interface
-click>=8.1.0
-typer>=0.9.0
+# UUID生成
+uuid>=1.30
 
-# GUI (optional)
-tkinter-tooltip>=2.0.0
+# パス操作
+pathlib>=1.0.1
 
-# Development dependencies
-pytest>=7.0.0
-pytest-asyncio>=0.21.0
-pytest-cov>=4.0.0
-black>=23.0.0
+# 型ヒント
+typing-extensions==4.8.0
+
+# === テスト・開発 ===
+# テストフレームワーク
+pytest==7.4.3
+pytest-asyncio>=0.21.1
+pytest-mock==3.12.0
+
+# コード品質
 flake8>=6.0.0
-mypy>=1.0.0
+black>=23.7.0
+mypy>=1.5.1
 
-# Documentation
-sphinx>=7.0.0
-sphinx-rtd-theme>=1.3.0
+# === パフォーマンス ===
+# メモリプロファイリング
+memory-profiler>=0.61.0
+
+# CPU プロファイリング
+py-spy>=0.3.14
+
+# === ネットワーク ===
+# WebSocket
+websockets>=11.0.3
+
+# DNS解決
+dnspython>=2.4.2
+
+# === 文字列処理 ===
+# 正規表現
+regex>=2023.8.8
+
+# 文字エンコーディング検出
+chardet>=5.2.0
+
+# === システム情報 ===
+# システム情報取得
+psutil>=5.9.5
+
+# プラットフォーム検出
+platform>=1.0.8
+
+# === 国際化 ===
+# 多言語対応
+babel>=2.12.1
+
+# === エラー追跡 ===
+# エラー監視
+sentry-sdk>=1.30.0
+
+# === API 関連 ===
+# FastAPI (将来のWeb API用)
+fastapi>=0.103.0
+uvicorn>=0.23.2
+
+# === データ処理 ===
+# JSON処理高速化
+ujson>=5.8.0
+
+# CSV処理
+pandas>=2.0.3
+
+# === キャッシュ ===
+# メモリキャッシュ
+cachetools>=5.3.1
+
+# Redis (オプション)
+redis>=4.6.0
+
+# === 並行処理 ===
+# 並行処理ユーティリティ
+concurrent-futures>=3.1.1
+
+# === 設定ファイル処理 ===
+# INI ファイル
+configparser>=5.3.0
+
+# === 暗号化追加 ===
+# 追加暗号化アルゴリズム
+pycryptodome>=3.18.0
+
+# === バリデーション ===
+# スキーマバリデーション
+cerberus>=1.3.5
+
+# === 時間処理 ===
+# タイムゾーン処理
+pytz>=2023.3
+
+# === ファイル処理 ===
+# ファイル監視
+watchdog>=3.0.0
+
+# === 圧縮 ===
+# 圧縮ライブラリ
+zstandard>=0.21.0
+
+# === 開発ツール ===
+# 自動リロード
+watchfiles>=0.19.0
+
+# === バージョン管理 ===
+# セマンティックバージョニング
+semantic-version>=2.10.0
+
+# === 設定管理追加 ===
+# 設定ファイル検証
+voluptuous>=0.13.1
+
+# === GUI 追加 ===
+# システムトレイ
+pystray>=0.19.4
+
+# 通知
+plyer>=2.1.0
+
+# === ネットワーク追加 ===
+# プロキシ対応
+requests-toolbelt>=1.0.0
+
+# === セキュリティ追加 ===
+# JWT トークン
+pyjwt>=2.8.0
+
+# === ログ追加 ===
+# 色付きログ
+colorlog>=6.7.0
+
+# === 環境検出 ===
+# 仮想環境検出
+virtualenv>=20.24.3
+
+# === パッケージ情報 ===
+# パッケージメタデータ
+importlib-metadata>=6.8.0
+
+# === 互換性 ===
+# Python 2/3 互換性
+six>=1.16.0
+
+# === 文字列マッチング ===
+# ファジー文字列マッチング
+fuzzywuzzy>=0.18.0
+python-Levenshtein>=0.21.1
+
+# === 数値処理 ===
+# 数値計算
+numpy>=1.24.3
+
+# === 設定ファイル暗号化 ===
+# 追加暗号化サポート
+keyring>=24.2.0
+
+# === プロセス管理 ===
+# プロセス制御
+psutil>=5.9.5
+
+# === 例外処理 ===
+# 例外トレースバック改善
+rich>=13.5.2
+
+# === 型チェック ===
+# ランタイム型チェック
+typeguard>=4.1.3
+
+# === 設定検証 ===
+# 追加バリデーション
+marshmallow>=3.20.1
+
+# === 並行処理追加 ===
+# 非同期キュー
+asyncio-mqtt>=0.13.0
+
+# Text Processing
+markdown==3.5.1
+beautifulsoup4==4.12.2
+lxml==4.9.3
+
+# Core GUI Framework
+tkinter-tooltip==1.1.0
+
+# Async Support
+asyncio-throttle==1.0.2
+asyncio-compat==0.1.2
+
+# File Handling
+pathlib2==2.3.7
+
+# === インストール注意事項 ===
+# 以下のパッケージは環境により手動調整が必要な場合があります：
+# - torch: CUDA対応版が必要な場合は公式サイトから
+# - transformers: モデルサイズにより追加設定が必要
+# - fastapi: Web API機能を使用しない場合は削除可能
+# - redis: Redis サーバーを使用しない場合は削除可能
+# - pandas: 大規模データ処理を行わない場合は削除可能
+
+# === 開発環境専用 (本番環境では削除推奨) ===
+# デバッグツール
+ipdb>=0.13.13
+pdb++>=0.10.3
+
+# === バージョン固定理由 ===
+# - cryptography: セキュリティ脆弱性対応のため最新版
+# - openai: API仕様変更に対応するため1.3.0以上
+# - customtkinter: GUI安定性のため5.2.0以上
+# - sqlalchemy: 2.0系の新機能使用のため
+# - pydantic: V2の性能向上のため2.3.0以上
