@@ -1,0 +1,55 @@
+{
+  "id": "code_explanation",
+  "name": "コード説明",
+  "description": "コードの動作原理を詳しく説明します",
+  "category": "explanation",
+  "template": "以下のコードについて、動作原理を詳しく説明してください。\n    コード:\n    {code}\n    説明レベル: {explanation_level}\n\n    以下の観点から説明してください:\n\n    コードの全体的な流れ\n    各部分の役割と機能\n    使用されているアルゴリズムや技術\n    重要なポイントや注意点\n    改善の余地があれば提案\n    {specific_questions}\n\n    わかりやすく詳細な説明を提供してください:",
+  "variables": [
+    {
+      "name": "language",
+      "description": "プログラミング言語",
+      "type": "string",
+      "required": true,
+      "default_value": "python",
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "code",
+      "description": "説明対象のコード",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "explanation_level",
+      "description": "説明レベル",
+      "type": "string",
+      "required": false,
+      "default_value": "中級者向け",
+      "validation_pattern": null,
+      "options": [
+        "初心者向け",
+        "中級者向け",
+        "上級者向け"
+      ]
+    },
+    {
+      "name": "specific_questions",
+      "description": "特定の質問",
+      "type": "string",
+      "required": false,
+      "default_value": "",
+      "validation_pattern": null,
+      "options": null
+    }
+  ],
+  "language": "ja",
+  "version": "1.0",
+  "author": "system",
+  "created_at": "2025-07-18T16:48:08.189991",
+  "updated_at": "2025-07-18T16:48:08.189991",
+  "tags": []
+}

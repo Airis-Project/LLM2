@@ -14,11 +14,13 @@ from pathlib import Path
 import re
 from datetime import datetime
 
-from ..core.logger import get_logger
+from src.core.logger import get_logger
 #from ..core.config_manager import get_config
 
+_template_manager_instance = None
+
 def get_config(*args, **kwargs):
-    from ..core.config_manager import get_config
+    from src.core.config_manager import get_config
     return get_config(*args, **kwargs)
 
 
@@ -300,320 +302,332 @@ class PromptTemplateManager:
     TemplateVariable("answer_perspective", "回答の観点", "string", False, "初心者にもわかりやすく")
     ]
     ))
+        templates.append(PromptTemplate(
+        id="general_chat",
+        name="一般チャット",
+        description="一般的な会話・質問に対応するプロンプトテンプレート",
+        category=TemplateCategory.GENERAL,
+        template="""あなたは親切なAIアシスタントです。以下の質問に日本語で丁寧に答えてください。
+    質問: {question}
+
+    必要に応じて具体例やコード例も含めてください。""",
+        variables=[
+            TemplateVariable("question", "質問内容", "string", True, "")
+        ]
+    ))
         return templates
 
-def _load_templates(self):
-    """既存のテンプレートファイルを読み込み"""
-    try:
-        template_files = list(self.templates_dir.glob("*.json")) + list(self.templates_dir.glob("*.yaml"))
-        
-        for file_path in template_files:
-            try:
-                template = self._load_template_from_file(file_path)
-                if template:
-                    self.templates[template.id] = template
-                    
-            except Exception as e:
-                self.logger.error(f"テンプレートファイル読み込みエラー {file_path}: {e}")
-        
-        self.logger.info(f"{len(template_files)} 個のテンプレートファイルを処理しました")
-        
-    except Exception as e:
-        self.logger.error(f"テンプレート読み込みエラー: {e}")
-
-def _load_template_from_file(self, file_path: Path) -> Optional[PromptTemplate]:
-    """ファイルからテンプレートを読み込み"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            if file_path.suffix == '.json':
-                data = json.load(f)
-            else:  # yaml
-                data = yaml.safe_load(f)
-        
-        # 変数リストを TemplateVariable オブジェクトに変換
-        variables = []
-        for var_data in data.get('variables', []):
-            variables.append(TemplateVariable(**var_data))
-        
-        # datetime フィールドを処理
-        created_at = data.get('created_at')
-        if isinstance(created_at, str):
-            created_at = datetime.fromisoformat(created_at)
-        
-        updated_at = data.get('updated_at')
-        if isinstance(updated_at, str):
-            updated_at = datetime.fromisoformat(updated_at)
-        
-        template = PromptTemplate(
-            id=data['id'],
-            name=data['name'],
-            description=data['description'],
-            category=TemplateCategory(data['category']),
-            template=data['template'],
-            variables=variables,
-            language=data.get('language', 'ja'),
-            version=data.get('version', '1.0'),
-            author=data.get('author', 'unknown'),
-            created_at=created_at,
-            updated_at=updated_at,
-            tags=data.get('tags', [])
-        )
-        
-        return template
-        
-    except Exception as e:
-        self.logger.error(f"テンプレートファイル解析エラー {file_path}: {e}")
-        return None
-
-def _save_template_to_file(self, template: PromptTemplate):
-    """テンプレートをファイルに保存"""
-    try:
-        file_path = self.templates_dir / f"{template.id}.json"
-        
-        # TemplateVariable を辞書に変換
-        template_dict = asdict(template)
-        template_dict['category'] = template.category.value
-        
-        # datetime を文字列に変換
-        if template_dict['created_at']:
-            template_dict['created_at'] = template.created_at.isoformat()
-        if template_dict['updated_at']:
-            template_dict['updated_at'] = template.updated_at.isoformat()
-        
-        with open(file_path, 'w', encoding='utf-8') as f:
-            json.dump(template_dict, f, ensure_ascii=False, indent=2)
-        
-    except Exception as e:
-        self.logger.error(f"テンプレート保存エラー {template.id}: {e}")
-
-def get_template(self, template_id: str) -> Optional[PromptTemplate]:
-    """
-    テンプレートを取得
-    
-    Args:
-        template_id: テンプレートID
-        
-    Returns:
-        PromptTemplate: テンプレート（存在しない場合はNone）
-    """
-    return self.templates.get(template_id)
-
-def get_all_templates(self) -> Dict[str, PromptTemplate]:
-    """すべてのテンプレートを取得"""
-    return self.templates.copy()
-
-def get_templates_by_category(self, category: TemplateCategory) -> Dict[str, PromptTemplate]:
-    """
-    カテゴリ別にテンプレートを取得
-    
-    Args:
-        category: テンプレートカテゴリ
-        
-    Returns:
-        Dict[str, PromptTemplate]: カテゴリに属するテンプレート
-    """
-    return {
-        template_id: template 
-        for template_id, template in self.templates.items()
-        if template.category == category
-    }
-
-def search_templates(self, query: str) -> Dict[str, PromptTemplate]:
-    """
-    テンプレートを検索
-    
-    Args:
-        query: 検索クエリ
-        
-    Returns:
-        Dict[str, PromptTemplate]: 検索結果
-    """
-    try:
-        query_lower = query.lower()
-        results = {}
-        
-        for template_id, template in self.templates.items():
-            # 名前、説明、タグで検索
-            if (query_lower in template.name.lower() or
-                query_lower in template.description.lower() or
-                any(query_lower in tag.lower() for tag in template.tags)):
-                results[template_id] = template
-        
-        return results
-        
-    except Exception as e:
-        self.logger.error(f"テンプレート検索エラー: {e}")
-        return {}
-
-def render_template(self, template_id: str, variables: Dict[str, Any]) -> str:
-    """
-    テンプレートを変数で置換してレンダリング
-    
-    Args:
-        template_id: テンプレートID
-        variables: 変数の値
-        
-    Returns:
-        str: レンダリングされたプロンプト
-    """
-    try:
-        template = self.get_template(template_id)
-        if not template:
-            raise ValueError(f"テンプレートが見つかりません: {template_id}")
-        
-        # 必須変数のチェック
-        self._validate_variables(template, variables)
-        
-        # デフォルト値を設定
-        render_variables = self._apply_default_values(template, variables)
-        
-        # テンプレートをレンダリング
-        rendered = template.template.format(**render_variables)
-        
-        return rendered
-        
-    except Exception as e:
-        self.logger.error(f"テンプレートレンダリングエラー {template_id}: {e}")
-        raise
-
-def _validate_variables(self, template: PromptTemplate, variables: Dict[str, Any]):
-    """変数の妥当性を検証"""
-    try:
-        for var in template.variables:
-            if var.required and var.name not in variables:
-                raise ValueError(f"必須変数が不足しています: {var.name}")
+    def _load_templates(self):
+        """既存のテンプレートファイルを読み込み"""
+        try:
+            template_files = list(self.templates_dir.glob("*.json")) + list(self.templates_dir.glob("*.yaml"))
             
-            if var.name in variables:
-                value = variables[var.name]
-                
-                # 型チェック
-                if var.type == "number" and not isinstance(value, (int, float)):
-                    try:
-                        variables[var.name] = float(value)
-                    except ValueError:
-                        raise ValueError(f"変数 {var.name} は数値である必要があります")
-                
-                elif var.type == "boolean" and not isinstance(value, bool):
-                    if isinstance(value, str):
-                        variables[var.name] = value.lower() in ['true', '1', 'yes', 'on']
-                    else:
-                        variables[var.name] = bool(value)
-                
-                # 選択肢チェック
-                if var.options and value not in var.options:
-                    raise ValueError(f"変数 {var.name} の値は {var.options} のいずれかである必要があります")
-                
-                # パターンチェック
-                if var.validation_pattern and isinstance(value, str):
-                    if not re.match(var.validation_pattern, value):
-                        raise ValueError(f"変数 {var.name} の値がパターンに一致しません: {var.validation_pattern}")
-        
-    except Exception as e:
-        self.logger.error(f"変数検証エラー: {e}")
-        raise
+            for file_path in template_files:
+                try:
+                    template = self._load_template_from_file(file_path)
+                    if template:
+                        self.templates[template.id] = template
+                        
+                except Exception as e:
+                    self.logger.error(f"テンプレートファイル読み込みエラー {file_path}: {e}")
+            
+            self.logger.info(f"{len(template_files)} 個のテンプレートファイルを処理しました")
+            
+        except Exception as e:
+            self.logger.error(f"テンプレート読み込みエラー: {e}")
 
-def _apply_default_values(self, template: PromptTemplate, variables: Dict[str, Any]) -> Dict[str, Any]:
-    """デフォルト値を適用"""
-    try:
-        result = variables.copy()
-        
-        for var in template.variables:
-            if var.name not in result and var.default_value is not None:
-                result[var.name] = var.default_value
-        
-        return result
-        
-    except Exception as e:
-        self.logger.error(f"デフォルト値適用エラー: {e}")
-        return variables
+    def _load_template_from_file(self, file_path: Path) -> Optional[PromptTemplate]:
+        """ファイルからテンプレートを読み込み"""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                if file_path.suffix == '.json':
+                    data = json.load(f)
+                else:  # yaml
+                    data = yaml.safe_load(f)
+            
+            # 変数リストを TemplateVariable オブジェクトに変換
+            variables = []
+            for var_data in data.get('variables', []):
+                variables.append(TemplateVariable(**var_data))
+            
+            # datetime フィールドを処理
+            created_at = data.get('created_at')
+            if isinstance(created_at, str):
+                created_at = datetime.fromisoformat(created_at)
+            
+            updated_at = data.get('updated_at')
+            if isinstance(updated_at, str):
+                updated_at = datetime.fromisoformat(updated_at)
+            
+            template = PromptTemplate(
+                id=data['id'],
+                name=data['name'],
+                description=data['description'],
+                category=TemplateCategory(data['category']),
+                template=data['template'],
+                variables=variables,
+                language=data.get('language', 'ja'),
+                version=data.get('version', '1.0'),
+                author=data.get('author', 'unknown'),
+                created_at=created_at,
+                updated_at=updated_at,
+                tags=data.get('tags', [])
+            )
+            
+            return template
+            
+        except Exception as e:
+            self.logger.error(f"テンプレートファイル解析エラー {file_path}: {e}")
+            return None
 
-def add_template(self, template: PromptTemplate) -> bool:
-    """
-    新しいテンプレートを追加
-    
-    Args:
-        template: 追加するテンプレート
-        
-    Returns:
-        bool: 追加が成功した場合True
-    """
-    try:
-        # IDの重複チェック
-        if template.id in self.templates:
-            raise ValueError(f"テンプレートID '{template.id}' は既に存在します")
-        
-        # テンプレートを追加
-        self.templates[template.id] = template
-        
-        # ファイルに保存
-        self._save_template_to_file(template)
-        
-        self.logger.info(f"テンプレートを追加しました: {template.id}")
-        return True
-        
-    except Exception as e:
-        self.logger.error(f"テンプレート追加エラー: {e}")
-        return False
+    def _save_template_to_file(self, template: PromptTemplate):
+        """テンプレートをファイルに保存"""
+        try:
+            file_path = self.templates_dir / f"{template.id}.json"
+            
+            # TemplateVariable を辞書に変換
+            template_dict = asdict(template)
+            template_dict['category'] = template.category.value
+            
+            # datetime を文字列に変換
+            if template_dict['created_at']:
+                template_dict['created_at'] = template.created_at.isoformat()
+            if template_dict['updated_at']:
+                template_dict['updated_at'] = template.updated_at.isoformat()
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(template_dict, f, ensure_ascii=False, indent=2)
+            
+        except Exception as e:
+            self.logger.error(f"テンプレート保存エラー {template.id}: {e}")
 
-def update_template(self, template: PromptTemplate) -> bool:
-    """
-    既存のテンプレートを更新
-    
-    Args:
-        template: 更新するテンプレート
+    def get_template(self, template_id: str) -> Optional[PromptTemplate]:
+        """
+        テンプレートを取得
         
-    Returns:
-        bool: 更新が成功した場合True
-    """
-    try:
-        if template.id not in self.templates:
-            raise ValueError(f"テンプレートが見つかりません: {template.id}")
-        
-        # 更新日時を設定
-        template.updated_at = datetime.now()
-        
-        # テンプレートを更新
-        self.templates[template.id] = template
-        
-        # ファイルに保存
-        self._save_template_to_file(template)
-        
-        self.logger.info(f"テンプレートを更新しました: {template.id}")
-        return True
-        
-    except Exception as e:
-        self.logger.error(f"テンプレート更新エラー: {e}")
-        return False
+        Args:
+            template_id: テンプレートID
+            
+        Returns:
+            PromptTemplate: テンプレート（存在しない場合はNone）
+        """
+        return self.templates.get(template_id)
 
-def delete_template(self, template_id: str) -> bool:
-    """
-    テンプレートを削除
-    
-    Args:
-        template_id: 削除するテンプレートID
+    def get_all_templates(self) -> Dict[str, PromptTemplate]:
+        """すべてのテンプレートを取得"""
+        return self.templates.copy()
+
+    def get_templates_by_category(self, category: TemplateCategory) -> Dict[str, PromptTemplate]:
+        """
+        カテゴリ別にテンプレートを取得
         
-    Returns:
-        bool: 削除が成功した場合True
-    """
-    try:
-        if template_id not in self.templates:
-            raise ValueError(f"テンプレートが見つかりません: {template_id}")
+        Args:
+            category: テンプレートカテゴリ
+            
+        Returns:
+            Dict[str, PromptTemplate]: カテゴリに属するテンプレート
+        """
+        return {
+            template_id: template 
+            for template_id, template in self.templates.items()
+            if template.category == category
+        }
+
+    def search_templates(self, query: str) -> Dict[str, PromptTemplate]:
+        """
+        テンプレートを検索
         
-        # メモリから削除
-        del self.templates[template_id]
+        Args:
+            query: 検索クエリ
+            
+        Returns:
+            Dict[str, PromptTemplate]: 検索結果
+        """
+        try:
+            query_lower = query.lower()
+            results = {}
+            
+            for template_id, template in self.templates.items():
+                # 名前、説明、タグで検索
+                if (query_lower in template.name.lower() or
+                    query_lower in template.description.lower() or
+                    any(query_lower in tag.lower() for tag in template.tags)):
+                    results[template_id] = template
+            
+            return results
+            
+        except Exception as e:
+            self.logger.error(f"テンプレート検索エラー: {e}")
+            return {}
+
+    def render_template(self, template_id: str, variables: Dict[str, Any]) -> str:
+        """
+        テンプレートを変数で置換してレンダリング
         
-        # ファイルを削除
-        file_path = self.templates_dir / f"{template_id}.json"
-        if file_path.exists():
-            file_path.unlink()
+        Args:
+            template_id: テンプレートID
+            variables: 変数の値
+            
+        Returns:
+            str: レンダリングされたプロンプト
+        """
+        try:
+            template = self.get_template(template_id)
+            if not template:
+                raise ValueError(f"テンプレートが見つかりません: {template_id}")
+            
+            # 必須変数のチェック
+            self._validate_variables(template, variables)
+            
+            # デフォルト値を設定
+            render_variables = self._apply_default_values(template, variables)
+            
+            # テンプレートをレンダリング
+            rendered = template.template.format(**render_variables)
+            
+            return rendered
+            
+        except Exception as e:
+            self.logger.error(f"テンプレートレンダリングエラー {template_id}: {e}")
+            raise
+
+    def _validate_variables(self, template: PromptTemplate, variables: Dict[str, Any]):
+        """変数の妥当性を検証"""
+        try:
+            for var in template.variables:
+                if var.required and var.name not in variables:
+                    raise ValueError(f"必須変数が不足しています: {var.name}")
+                
+                if var.name in variables:
+                    value = variables[var.name]
+                    
+                    # 型チェック
+                    if var.type == "number" and not isinstance(value, (int, float)):
+                        try:
+                            variables[var.name] = float(value)
+                        except ValueError:
+                            raise ValueError(f"変数 {var.name} は数値である必要があります")
+                    
+                    elif var.type == "boolean" and not isinstance(value, bool):
+                        if isinstance(value, str):
+                            variables[var.name] = value.lower() in ['true', '1', 'yes', 'on']
+                        else:
+                            variables[var.name] = bool(value)
+                    
+                    # 選択肢チェック
+                    if var.options and value not in var.options:
+                        raise ValueError(f"変数 {var.name} の値は {var.options} のいずれかである必要があります")
+                    
+                    # パターンチェック
+                    if var.validation_pattern and isinstance(value, str):
+                        if not re.match(var.validation_pattern, value):
+                            raise ValueError(f"変数 {var.name} の値がパターンに一致しません: {var.validation_pattern}")
+            
+        except Exception as e:
+            self.logger.error(f"変数検証エラー: {e}")
+            raise
+
+    def _apply_default_values(self, template: PromptTemplate, variables: Dict[str, Any]) -> Dict[str, Any]:
+        """デフォルト値を適用"""
+        try:
+            result = variables.copy()
+            
+            for var in template.variables:
+                if var.name not in result and var.default_value is not None:
+                    result[var.name] = var.default_value
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"デフォルト値適用エラー: {e}")
+            return variables
+
+    def add_template(self, template: PromptTemplate) -> bool:
+        """
+        新しいテンプレートを追加
         
-        self.logger.info(f"テンプレートを削除しました: {template_id}")
-        return True
+        Args:
+            template: 追加するテンプレート
+            
+        Returns:
+            bool: 追加が成功した場合True
+        """
+        try:
+            # IDの重複チェック
+            if template.id in self.templates:
+                raise ValueError(f"テンプレートID '{template.id}' は既に存在します")
+            
+            # テンプレートを追加
+            self.templates[template.id] = template
+            
+            # ファイルに保存
+            self._save_template_to_file(template)
+            
+            self.logger.info(f"テンプレートを追加しました: {template.id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"テンプレート追加エラー: {e}")
+            return False
+
+    def update_template(self, template: PromptTemplate) -> bool:
+        """
+        既存のテンプレートを更新
         
-    except Exception as e:
-        self.logger.error(f"テンプレート削除エラー: {e}")
-        return False
-_template_manager_instance = None
+        Args:
+            template: 更新するテンプレート
+            
+        Returns:
+            bool: 更新が成功した場合True
+        """
+        try:
+            if template.id not in self.templates:
+                raise ValueError(f"テンプレートが見つかりません: {template.id}")
+            
+            # 更新日時を設定
+            template.updated_at = datetime.now()
+            
+            # テンプレートを更新
+            self.templates[template.id] = template
+            
+            # ファイルに保存
+            self._save_template_to_file(template)
+            
+            self.logger.info(f"テンプレートを更新しました: {template.id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"テンプレート更新エラー: {e}")
+            return False
+
+    def delete_template(self, template_id: str) -> bool:
+        """
+        テンプレートを削除
+        
+        Args:
+            template_id: 削除するテンプレートID
+            
+        Returns:
+            bool: 削除が成功した場合True
+        """
+        try:
+            if template_id not in self.templates:
+                raise ValueError(f"テンプレートが見つかりません: {template_id}")
+            
+            # メモリから削除
+            del self.templates[template_id]
+            
+            # ファイルを削除
+            file_path = self.templates_dir / f"{template_id}.json"
+            if file_path.exists():
+                file_path.unlink()
+            
+            self.logger.info(f"テンプレートを削除しました: {template_id}")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"テンプレート削除エラー: {e}")
+            return False
 
 def get_prompt_template_manager() -> PromptTemplateManager:
     """PromptTemplateManager のシングルトンインスタンスを取得"""

@@ -1,0 +1,33 @@
+{
+  "id": "general_question",
+  "name": "一般的な質問",
+  "description": "プログラミングに関する一般的な質問に回答します",
+  "category": "general",
+  "template": "以下の質問について、詳しく回答してください。\n    質問: {question}\n\n    回答の観点:\n    {answer_perspective}\n\n    具体例やコード例があれば含めてください。\n    実用的で理解しやすい回答を提供してください:",
+  "variables": [
+    {
+      "name": "question",
+      "description": "質問内容",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "answer_perspective",
+      "description": "回答の観点",
+      "type": "string",
+      "required": false,
+      "default_value": "初心者にもわかりやすく",
+      "validation_pattern": null,
+      "options": null
+    }
+  ],
+  "language": "ja",
+  "version": "1.0",
+  "author": "system",
+  "created_at": "2025-07-18T16:48:08.189991",
+  "updated_at": "2025-07-18T16:48:08.189991",
+  "tags": []
+}

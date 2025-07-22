@@ -1,0 +1,24 @@
+{
+  "id": "general_chat",
+  "name": "一般チャット",
+  "description": "一般的な会話・質問に対応するプロンプトテンプレート",
+  "category": "general",
+  "template": "あなたは親切なAIアシスタントです。以下の質問に日本語で丁寧に答えてください。\n    質問: {question}\n\n    必要に応じて具体例やコード例も含めてください。",
+  "variables": [
+    {
+      "name": "question",
+      "description": "質問内容",
+      "type": "string",
+      "required": true,
+      "default_value": "",
+      "validation_pattern": null,
+      "options": null
+    }
+  ],
+  "language": "ja",
+  "version": "1.0",
+  "author": "system",
+  "created_at": "2025-07-18T16:48:08.189991",
+  "updated_at": "2025-07-18T16:48:08.189991",
+  "tags": []
+}

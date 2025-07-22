@@ -53,8 +53,6 @@ from .llm_factory import (
     get_llm_factory,
     create_llm_client,
     create_llm_client_async,
-    #get_available_providers,
-    #get_provider_info
 )
 
 # プロンプトテンプレート管理
@@ -142,22 +140,23 @@ __all__ = [
     "TemplateVariable",
     "TemplateCategory",
     "get_prompt_template_manager",
-    "load_template",
-    "load_template_async",
-    "render_template",
-    "render_template_async",
+    #"load_template",
+    #"load_template_async",
+    #"render_template",
+    #"render_template_async",
+    #"_load_templates",
     
     # レスポンス解析
     "ResponseParser",
     "ParsedResponse",
     "CodeBlock",
-    "ReviewComment", 
-    "DocumentSection",
+    #"ReviewComment", 
+    #"DocumentSection",
     "get_response_parser",
-    "parse_code_response",
-    "parse_review_response",
-    "parse_documentation_response",
-    "parse_general_response",
+    #"parse_code_response",
+    #"parse_review_response",
+    #"parse_documentation_response",
+    #"parse_general_response",
     
     # 中間サービス層
     "LLMServiceCore",

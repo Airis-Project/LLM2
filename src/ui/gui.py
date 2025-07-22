@@ -9,21 +9,17 @@ from tkinter import ttk, scrolledtext, messagebox, filedialog
 import threading
 import asyncio
 from datetime import datetime
+import traceback
 from typing import Dict, List, Optional, Any
 import json
 import os
 
 # 修正されたimport文
-from ..llm.llm_service import get_llm_service, LLMServiceCore, TaskType, TaskPriority, LLMTask, LLMResult
-from ..llm.llm_factory import get_llm_factory
-from ..llm.base_llm import LLMConfig, LLMRole
-from ..llm.prompt_templates import get_prompt_template_manager, create_code_generation_prompt, create_code_review_prompt
-from ..llm.response_parser import get_response_parser, parse_llm_response, ResponseType
-from ..core.logger import get_logger
-from ..core.config_manager import get_config
-from ..core.event_system import get_event_system
-from ..utils.file_utils import FileUtils
-from ..utils.text_utils import TextUtils
+from src.llm.llm_service import LLMServiceCore, TaskType, TaskPriority, LLMTask, LLMResult
+from src.llm.base_llm import LLMConfig, LLMRole
+from src.llm.prompt_templates import create_code_generation_prompt, create_code_review_prompt
+from src.llm.response_parser import parse_llm_response, ResponseType
+from src.core.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -37,6 +33,14 @@ class ChatGUI:
         Args:
             root: Tkinterルートウィンドウ
         """
+        from src.llm.llm_service import get_llm_service
+        from src.llm.llm_factory import get_llm_factory
+        from src.llm.prompt_templates import get_prompt_template_manager
+        from src.llm.response_parser import get_response_parser
+        from src.core.config_manager import get_config
+        from src.utils.file_utils import FileUtils
+        from src.utils.text_utils import TextUtils
+
         self.root = root
         self.logger = get_logger(self.__class__.__name__)
         
@@ -221,6 +225,7 @@ class ChatGUI:
     def setup_event_handlers(self):
         """イベントハンドラーをセットアップ"""
         try:
+            from src.core.event_system import get_event_system
             # イベントシステムからの通知を受信
             event_system = get_event_system()
             event_system.subscribe('llm_task_started', self.on_task_started)
@@ -640,6 +645,7 @@ class ChatGUI:
             self.status_var.set(message)
             self.root.update_idletasks()
         except Exception as e:
+            traceback.print_exc()
             self.logger.error(f"ステータス更新エラー: {e}")
     
     def start_progress(self):

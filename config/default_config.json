@@ -16,54 +16,7 @@
     "timeout": 30,
     "max_retries": 3,
     "retry_delay": 1.0,
-    "providers": {
-      "openai": {
-        "enabled": true,
-        "api_key": "${OPENAI_API_KEY}",
-        "organization": "${OPENAI_ORG_ID}",
-        "base_url": "https://api.openai.com/v1",
-        "models": {
-          "default": "gpt-4",
-          "available": [
-            "gpt-3.5-turbo",
-            "gpt-3.5-turbo-16k",
-            "gpt-4",
-            "gpt-4-turbo-preview",
-            "gpt-4o"
-          ]
-        },
-        "parameters": {
-          "temperature": 0.3,
-          "max_tokens": 8192,
-          "top_p": 0.9,
-          "frequency_penalty": 0.0,
-          "presence_penalty": 0.0
-        },
-        "timeout": 120,
-        "max_retries": 3,
-        "stream": false
-      },
-      "claude": {
-        "enabled": true,
-        "api_key": "${CLAUDE_API_KEY}",
-        "base_url": "https://api.anthropic.com",
-        "models": {
-          "default": "claude-3-sonnet-20240229",
-          "available": [
-            "claude-3-sonnet-20240229",
-            "claude-3-haiku-20240307",
-            "claude-3-opus-20240229"
-          ]
-        },
-        "parameters": {
-          "temperature": 0.3,
-          "max_tokens": 8192
-        },
-        "timeout": 120,
-        "max_retries": 3,
-        "stream": false
-      },
-      "local": {
+    "local": {
         "enabled": true,
         "api_key": "",
         "base_url": "http://localhost:11434",
@@ -74,7 +27,9 @@
             "starcoder:7b",
             "codellama:7b",
             "phi4:14b",
-            "nomic-embed-text:latest"
+            "nomic-embed-text:latest",
+            "codellama:70b",
+            "llama3.3:70b"
           ]
         },
         "parameters": {
@@ -127,6 +82,53 @@
           "codellama:7b": 600,
           "nomic-embed-text:latest": 300
         }
+      },
+    "providers": {
+      "openai": {
+        "enabled": true,
+        "api_key": "${OPENAI_API_KEY}",
+        "organization": "${OPENAI_ORG_ID}",
+        "base_url": "https://api.openai.com/v1",
+        "models": {
+          "default": "gpt-4",
+          "available": [
+            "gpt-3.5-turbo",
+            "gpt-3.5-turbo-16k",
+            "gpt-4",
+            "gpt-4-turbo-preview",
+            "gpt-4o"
+          ]
+        },
+        "parameters": {
+          "temperature": 0.3,
+          "max_tokens": 8192,
+          "top_p": 0.9,
+          "frequency_penalty": 0.0,
+          "presence_penalty": 0.0
+        },
+        "timeout": 120,
+        "max_retries": 3,
+        "stream": false
+      },
+      "claude": {
+        "enabled": true,
+        "api_key": "${CLAUDE_API_KEY}",
+        "base_url": "https://api.anthropic.com",
+        "models": {
+          "default": "claude-3-sonnet-20240229",
+          "available": [
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307",
+            "claude-3-opus-20240229"
+          ]
+        },
+        "parameters": {
+          "temperature": 0.3,
+          "max_tokens": 8192
+        },
+        "timeout": 120,
+        "max_retries": 3,
+        "stream": false
       },
       "azure": {
         "enabled": false,

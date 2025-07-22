@@ -6,7 +6,7 @@
 拡張LLMクライアント v2.0
 スマートモデル選択、性能監視、エラーハンドリングを統合
 """
-
+import requests
 import asyncio
 import json
 import logging
@@ -14,12 +14,13 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union, AsyncGenerator, Callable
+from typing import Dict, List, Optional, Any, AsyncIterator, Union, AsyncGenerator, Callable
 from dataclasses import dataclass, asdict
 from enum import Enum
 import threading
 from concurrent.futures import ThreadPoolExecutor
 import queue
+from src.llm.base_llm import BaseLLM
 
 # プロジェクトルートをパスに追加
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -108,7 +109,7 @@ except ImportError:
         logger.setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-class EnhancedLLMClient:
+class EnhancedLLMClient(BaseLLM):
     """拡張LLMクライアント - スマート機能統合版"""
     
     def __init__(self, config_path: Optional[str] = None):
@@ -150,8 +151,65 @@ class EnhancedLLMClient:
             'model_usage': {},
             'error_counts': {}
         }
+        # 設定値の初期化
+        self.backend = 'ollama'
+        self.base_url = 'http://localhost:11434'  # 必要に応じてconfig等から取得
         
+        if self.backend == 'ollama':
+            self.api_url = f"{self.base_url}/api"
+            self.generate_endpoint = f"{self.api_url}/generate"
+            self.chat_endpoint = f"{self.api_url}/chat"
+            self.models_endpoint = f"{self.api_url}/tags"
+        else:
+            self.api_url = self.base_url
+            self.generate_endpoint = f"{self.api_url}/completion"
+            self.chat_endpoint = f"{self.api_url}/v1/chat/completions"
+            self.models_endpoint = f"{self.api_url}/v1/models"
+            
         logger.info("拡張LLMクライアントを初期化しました")
+
+    async def generate_async(self, messages: List[Dict[str, Any]], **kwargs) -> str:
+        """
+        テキスト生成（非同期版）
+        
+        Args:
+            messages: メッセージリスト
+            **kwargs: 追加パラメータ
+            
+        Returns:
+            生成されたテキスト
+        """
+        try:
+            if self.backend == 'ollama':
+                return await self._generate_ollama_async(messages, **kwargs)
+            else:
+                return await self._generate_llamacpp_async(messages, **kwargs)
+        except Exception as e:
+            self.logger.error(f"非同期テキスト生成エラー: {e}")
+            raise
+
+    async def generate_stream_async(self, messages: List[Dict[str, Any]], **kwargs) -> AsyncIterator[str]:
+        """
+        ストリーミングテキスト生成（非同期版）
+        
+        Args:
+            messages: メッセージリスト
+            **kwargs: 追加パラメータ
+            
+        Yields:
+            生成されたテキストの断片
+        """
+        try:
+            if self.backend == 'ollama':
+                async for chunk in self._generate_stream_ollama_async(messages, **kwargs):
+                    yield chunk
+            else:
+                async for chunk in self._generate_stream_llamacpp_async(messages, **kwargs):
+                    yield chunk
+        except Exception as e:
+            self.logger.error(f"非同期ストリーミング生成エラー: {e}")
+            raise
+
     def is_available(self) -> bool:
         """可用性チェック - 追加"""
         try:
@@ -368,6 +426,23 @@ class EnhancedLLMClient:
                 'status': 'error',
                 'error': str(e)
             }
+    def validate_connection(self) -> bool:
+        print("-----------接続確認-------------------")
+        """
+        接続確認
+        
+        Returns:
+            接続可能かどうか
+        """
+        try:
+            self.logger.info(f"models_endpoint: {self.models_endpoint}")
+            response = requests.get(self.models_endpoint, timeout=100)
+            self.logger.info(f"status_code: {response.status_code}")
+            return response.status_code == 200
+        except Exception as e:
+            self.logger.error(f"接続確認エラー: {e}")
+            return False
+
 def shutdown(self):
         """クライアント終了処理"""
         try:
@@ -377,6 +452,8 @@ def shutdown(self):
         except Exception as e:
             self.logger.error(f"クライアント終了エラー: {e}")
 logger = get_logger(__name__)
+
+
 
 # エクスポート
 __all__ = [

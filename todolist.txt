@@ -1,0 +1,2 @@
+local_llm_client.py→llm_factory.pyへ移植中。
+main.pyを実行してエラーを解消していく。

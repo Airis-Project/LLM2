@@ -1,0 +1,42 @@
+{
+  "id": "code_generation_basic",
+  "name": "基本的なコード生成",
+  "description": "指定された要件に基づいてコードを生成します",
+  "category": "code_generation",
+  "template": "以下の要件に基づいて、{language}でコードを生成してください。\n\n    要件:\n    {requirements}\n\n    追加の条件:\n    - コードにはコメントを含めてください\n    - エラーハンドリングを考慮してください\n    - ベストプラクティスに従ってください\n    - 実用的で動作するコードにしてください\n\n    {additional_instructions}\n\n    コードを生成してください:",
+  "variables": [
+    {
+      "name": "language",
+      "description": "プログラミング言語",
+      "type": "string",
+      "required": true,
+      "default_value": "Python",
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "requirements",
+      "description": "要件の詳細",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "additional_instructions",
+      "description": "追加の指示",
+      "type": "string",
+      "required": false,
+      "default_value": "",
+      "validation_pattern": null,
+      "options": null
+    }
+  ],
+  "language": "ja",
+  "version": "1.0",
+  "author": "system",
+  "created_at": "2025-07-18T16:48:08.189991",
+  "updated_at": "2025-07-18T16:48:08.189991",
+  "tags": []
+}

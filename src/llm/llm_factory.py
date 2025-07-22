@@ -5,15 +5,18 @@ LLMファクトリーモジュール
 """
 
 import asyncio
+import traceback
 from typing import Dict, List, Optional, Any, Type, Union
 from enum import Enum
 import importlib
 from dataclasses import dataclass
+from unittest import result
 
 from src.llm.base_llm import BaseLLM, LLMConfig, LLMRole
 from src.llm.openai_client import OpenAIClient
 from src.llm.claude_client import ClaudeClient
-from src.llm.local_llm_client import LocalLLMClient
+#from src.llm.local_llm_client import LocalLLMClient #旧文LocalLLMClient
+
 from src.core.logger import get_logger
 from src.utils.validation_utils import ValidationUtils
 
@@ -79,6 +82,7 @@ class LLMFactory:
         self.logger.info("LLMファクトリーを初期化しました")
     
     def _initialize_default_providers(self):
+        from src.llm_client_v2 import EnhancedLLMClient
         """デフォルトプロバイダーを初期化"""
         try:
             # OpenAIプロバイダー
@@ -131,7 +135,7 @@ class LLMFactory:
                 name="local",
                 display_name="Local LLM",
                 provider=LLMProvider.LOCAL,
-                client_class=LocalLLMClient,
+                client_class=EnhancedLLMClient,
                 supported_models=[
                     "llama2:7b", "llama2:13b", "llama2:70b",
                     "codellama:7b", "codellama:13b", "codellama:34b",
@@ -143,7 +147,7 @@ class LLMFactory:
                 supports_functions=False,
                 description="ローカル実行LLMモデル（Ollama、llama.cpp等）",
                 default_config={
-                    "model": "llama2:7b",
+                    "model": "codellama:7b",
                     "temperature": 0.7,
                     "max_tokens": 2048,
                     "backend": "ollama",
@@ -424,8 +428,11 @@ class LLMFactory:
                     if provider_name == "local":
                         # ローカルLLMの可用性チェック
                         try:
+                            from src.llm_client_v2 import EnhancedLLMClient
+                            print("==== local LLM 可用性チェック開始 ====")
+                            print(f"default_config: {provider_info.default_config}")
                             temp_config = LLMConfig(
-                                model="test",
+                                model="wizardcoder:33b",
                                 temperature=0.7,
                                 max_tokens=100
                             )
@@ -433,13 +440,16 @@ class LLMFactory:
                             default_config = provider_info.default_config or {}
                             for key, value in default_config.items():
                                 setattr(temp_config, key, value)
-                            
-                            temp_client = LocalLLMClient(temp_config)
+                            print(f"temp_config: {temp_config.__dict__}")
+
+                            temp_client = EnhancedLLMClient(temp_config)
+                            print(f"validate_connection result: {result}")
                             # validate_connection メソッドを使用
                             if temp_client.validate_connection():
                                 available_providers.append(provider_name)
                         except Exception as e:
                             self.logger.debug(f"ローカルLLM可用性チェックエラー: {e}")
+                            traceback.print_exc()
                     else:
                         available_providers.append(provider_name)
                         

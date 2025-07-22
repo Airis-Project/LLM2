@@ -180,7 +180,7 @@ class EnhancedConfigManager(Singleton):
         self._metadata = ConfigMetadata(environment=self.environment)
         self._lock = threading.RLock()
         
-        # # LLM設定管理（遅延インポート）
+        # LLM設定管理（遅延インポート）
         self.llm_config_manager = None
         
         # 初期化
@@ -841,7 +841,7 @@ class ConfigManager(Singleton):
         self._default_files = {
             'main': 'config.json',
             'application': 'app_config.json',
-            'llm': 'llm_config.json',
+            'llm': 'default_config.json',
             'ui': 'ui_config.json',
             'security': 'security_config.json',
             'logging': 'logging_config.json'

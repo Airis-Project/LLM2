@@ -92,7 +92,7 @@ class LLMConfigManager:
             'local': ProviderConfig(
                 name='local',
                 base_url='http://localhost:11434',
-                models=['llama2', 'codellama', 'mistral'],
+                models=['llama2', 'codellama', 'mistral','llama3.3:70b','wizardcoder:33b','codellama:70b','phi4:14b','starcoder:7b','nomic-embed-text:latest','codellama:7b'],
                 timeout=60.0,
                 retry_count=2,
                 rate_limit=100

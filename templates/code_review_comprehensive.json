@@ -1,0 +1,42 @@
+{
+  "id": "code_review_comprehensive",
+  "name": "包括的なコードレビュー",
+  "description": "コードの品質、セキュリティ、パフォーマンスを総合的にレビューします",
+  "category": "code_review",
+  "template": "以下のコードをレビューしてください。\n\n    コード:\n    ```{language}\n    {code}\n    レビュー観点:\n\n    コードの品質と可読性\n    セキュリティの問題\n    パフォーマンスの改善点\n    ベストプラクティスの遵守\n    バグの可能性\n    保守性の観点\n    {specific_concerns}\n\n    詳細なレビュー結果を提供してください:",
+  "variables": [
+    {
+      "name": "language",
+      "description": "プログラミング言語",
+      "type": "string",
+      "required": true,
+      "default_value": "python",
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "code",
+      "description": "レビュー対象のコード",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "specific_concerns",
+      "description": "特定の懸念事項",
+      "type": "string",
+      "required": false,
+      "default_value": "",
+      "validation_pattern": null,
+      "options": null
+    }
+  ],
+  "language": "ja",
+  "version": "1.0",
+  "author": "system",
+  "created_at": "2025-07-18T16:48:08.189991",
+  "updated_at": "2025-07-18T16:48:08.189991",
+  "tags": []
+}

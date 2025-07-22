@@ -494,9 +494,9 @@ class LLMInterface:
         self.logger.info("LLMInterface初期化完了")
     
     async def generate_response(self, 
-                              messages: List[LLMMessage], 
-                              config: LLMConfig = None,
-                              use_cache: bool = True) -> LLMResponse:
+        messages: List[LLMMessage], 
+        config: LLMConfig = None,
+        use_cache: bool = True) -> LLMResponse:
         """
         レスポンスを生成
         
@@ -556,9 +556,9 @@ class LLMInterface:
             self.logger.error(f"レスポンス生成エラー: {e}")
             raise
     
-    async def generate_stream_response(self, 
-                                     messages: List[LLMMessage], 
-                                     config: LLMConfig = None) -> AsyncGenerator[str, None]:
+    async def generate_stream_response(self,
+        messages: List[LLMMessage],
+        config: LLMConfig = None) -> AsyncGenerator[str, None]:
         """
         ストリーミングレスポンスを生成
         

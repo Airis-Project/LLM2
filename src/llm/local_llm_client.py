@@ -430,6 +430,8 @@ class LocalLLMClient(BaseLLM):
             return []
     
     def validate_connection(self) -> bool:
+        print(f"model_name: {self.model_name}")
+        print("-----------接続確認-------------------")
         """
         接続確認
         
@@ -437,7 +439,9 @@ class LocalLLMClient(BaseLLM):
             接続可能かどうか
         """
         try:
-            response = requests.get(self.models_endpoint, timeout=10)
+            self.logger.info(f"models_endpoint: {self.models_endpoint}")
+            response = requests.get(self.models_endpoint, timeout=100)
+            self.logger.info(f"status_code: {response.status_code}")
             return response.status_code == 200
         except Exception as e:
             self.logger.error(f"接続確認エラー: {e}")

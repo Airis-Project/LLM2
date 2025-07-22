@@ -1,0 +1,51 @@
+{
+  "id": "code_translation",
+  "name": "コード翻訳",
+  "description": "コードを他の言語に翻訳します",
+  "category": "translation",
+  "template": "以下の{source_language}コードを{target_language}に翻訳してください。\n    元のコード:\n    {code}\n    翻訳時の注意点:\n\n    機能を完全に保持してください\n    ターゲット言語のベストプラクティスに従ってください\n    適切なエラーハンドリングを含めてください\n    コメントも翻訳してください\n    {additional_requirements}\n\n    翻訳されたコードを提供してください:",
+  "variables": [
+    {
+      "name": "source_language",
+      "description": "元の言語",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "target_language",
+      "description": "翻訳先の言語",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "code",
+      "description": "翻訳対象のコード",
+      "type": "string",
+      "required": true,
+      "default_value": null,
+      "validation_pattern": null,
+      "options": null
+    },
+    {
+      "name": "additional_requirements",
+      "description": "追加要件",
+      "type": "string",
+      "required": false,
+      "default_value": "",
+      "validation_pattern": null,
+      "options": null
+    }
+  ],
+  "language": "ja",
+  "version": "1.0",
+  "author": "system",
+  "created_at": "2025-07-18T16:48:08.189991",
+  "updated_at": "2025-07-18T16:48:08.189991",
+  "tags": []
+}
