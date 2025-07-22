@@ -1,6 +1,8 @@
 venv/
 tree.py
 tree.txt
+project_state_20250624_025743.json
+project_state_20250626_020551.json
 # .gitignore - LLM Code Assistant プロジェクト用Git除外設定
 
 # Byte-compiled / optimized / DLL files
