@@ -1,0 +1,9 @@
+{
+  "window_size": {
+    "width": 1200,
+    "height": 800
+  },
+  "streaming": false,
+  "last_provider": "local",
+  "last_model": "codellama:7b"
+}

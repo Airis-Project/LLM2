@@ -79,6 +79,8 @@ class ChatGUI:
         try:
             self.root.title("LLM Chat Assistant")
             self.root.geometry("1200x800")
+            self.status_var = tk.StringVar()
+            self.streaming_var = tk.BooleanVar()
             
             # メインフレーム
             main_frame = ttk.Frame(self.root)
