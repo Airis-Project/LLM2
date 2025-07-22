@@ -43,7 +43,7 @@ class ChatGUI:
 
         self.root = root
         self.logger = get_logger(self.__class__.__name__)
-        
+        self.setup_general_chat_tab()
         # サービス初期化
         self.llm_service = get_llm_service()
         self.llm_factory = get_llm_factory()
@@ -73,7 +73,20 @@ class ChatGUI:
         self.load_settings()
         
         self.logger.info("ChatGUI を初期化しました")
-    
+        
+    def setup_general_chat_tab(self):
+        try:
+            import logging
+            # GENERAL_CHAT タブのセットアップを行う
+            general_chat_frame = tk.Frame(self.notebook)
+            self.notebook.add(general_chat_frame, text="GENERAL_CHAT")
+            # GENERAL_CHAT タブ内にウィジェットを追加する
+            general_chat_text_area = tk.Text(general_chat_frame)
+            general_chat_text_area.pack(fill=tk.BOTH, expand=True)
+        except Exception as e:
+            # エラーが発生した場合、ログに出力する
+            logging.error(f"GUI セットアップエラー: GENERAL_CHAT - {str(e)}")
+
     def setup_gui(self):
         """GUI要素をセットアップ"""
         try:
