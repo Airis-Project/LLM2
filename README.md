@@ -78,6 +78,257 @@ graph TD
 - ## nomic-embed-text:latest
 - ## codellama:7b
 
+## プロジェクトツリー
+LLM2
+├── .env
+├── .env.example
+├── .github/
+│   └── workflows/
+│       └── tests.yml
+├── .gitignore
+├── .vscode/
+│   └── settings.json
+├── __init__.py
+├── assets/
+│   ├── icons/
+│   │   ├── app_icon.ico
+│   │   ├── file_icons/
+│   │   │   ├── css.png
+│   │   │   ├── default.png
+│   │   │   ├── html.png
+│   │   │   ├── javascript.png
+│   │   │   └── python.png
+│   │   └── toolbar_icons/
+│   │       ├── copy.png
+│   │       ├── cut.png
+│   │       ├── new.png
+│   │       ├── open.png
+│   │       ├── paste.png
+│   │       ├── save.png
+│   │       └── settings.png
+│   ├── sounds/
+│   │   ├── error.wav
+│   │   ├── notification.wav
+│   │   └── success.wav
+│   └── themes/
+│       ├── custom_theme.json
+│       ├── dark_theme.json
+│       └── light_theme.json
+├── backups/
+├── cache/
+├── config/
+│   ├── __init__.py
+│   ├── app_config.yaml
+│   ├── config_migrator.py
+│   ├── config_schema.py
+│   ├── config_validator.py
+│   ├── default_config.json
+│   ├── default_settings.json
+│   ├── examples/
+│   │   ├── anthropic_config.json
+│   │   ├── multi_provider_config.json
+│   │   └── openai_config.json
+│   ├── gui_settings.json
+│   ├── llm_config_manager.py
+│   ├── logging_config.yaml
+│   ├── schema.json
+│   └── user_settings.json
+├── data/
+│   ├── __init__.py
+│   ├── backups/
+│   ├── examples/
+│   │   ├── __init__.py
+│   │   ├── demo_code.py
+│   │   └── sample_project.json
+│   ├── file_history.db
+│   ├── projects.db
+│   └── templates/
+│       ├── __init__.py
+│       ├── html_page.html.template
+│       ├── javascript_component.js.template
+│       ├── python_class.py.template
+│       └── python_function.py.template
+├── docs/
+│   ├── __init__.py
+│   ├── api_reference.md
+│   ├── architecture.md
+│   ├── development_guide.md
+│   └── user_guide.md
+├── exports/
+├── git_auto_push.bat
+├── logs/
+│   ├── app.json
+│   ├── app.log
+│   ├── app_20250624.log
+│   ├── app_20250625.log
+│   ├── app_20250626.log
+│   ├── app_20250628.log
+│   ├── app_20250701.log
+│   ├── error.log
+│   ├── llm_assistant.log
+│   ├── llm_errors.log
+│   ├── llm_system.log
+│   └── startup_error.log
+├── main.py
+├── monitor_memory.py
+├── plugins/
+│   ├── __init__.py
+│   ├── base_plugin.py
+│   ├── code_formatter/
+│   │   ├── __init__.py
+│   │   ├── formatter_plugin.py
+│   │   ├── language_formatters.py
+│   │   └── main.py
+│   ├── export_tools/
+│   │   ├── __init__.py
+│   │   ├── export_formats.py
+│   │   └── export_plugin.py
+│   ├── git_integration/
+│   │   ├── __init__.py
+│   │   ├── git_commands.py
+│   │   └── git_plugin.py
+│   └── sample_plugin/
+│       └── main.py
+├── pytest.ini
+├── requirements copy.txt
+├── requirements-add.txt
+├── requirements-dev.txt
+├── requirements-gpu.txt
+├── requirements-minimal.txt
+├── requirements.txt
+├── save_project_state.py
+├── scripts/
+│   ├── build.py
+│   ├── deploy.py
+│   ├── dev.py
+│   ├── setup_dev.py
+│   ├── start.bat
+│   ├── start.py
+│   ├── start.sh
+│   └── test_runner.py
+├── setup.py
+├── src/
+│   ├── __init__.py
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── config_manager.py
+│   │   ├── context_builder.py
+│   │   ├── conversation_manager.py
+│   │   ├── error_handler.py
+│   │   ├── event_system copy.py
+│   │   ├── event_system.py
+│   │   ├── exceptions copy 2.py
+│   │   ├── exceptions copy.py
+│   │   ├── exceptions.py
+│   │   ├── file_manager.py
+│   │   ├── llm_interface.py
+│   │   ├── logger copy 2.py
+│   │   ├── logger copy.py
+│   │   ├── logger.py
+│   │   ├── plugin_manager.py
+│   │   ├── project_manager.py
+│   │   ├── prompt_builder.py
+│   │   ├── singleton.py
+│   │   ├── template_engine.py
+│   │   └── vector_store.py
+│   ├── database/
+│   │   ├── __init__.py
+│   │   └── database_manager.py
+│   ├── file_processing/
+│   │   └── file_loader.py
+│   ├── llm/
+│   │   ├── __init__.py
+│   │   ├── base_llm copy.py
+│   │   ├── base_llm.py
+│   │   ├── claude_client.py
+│   │   ├── llm_factory.py
+│   │   ├── llm_service.py
+│   │   ├── local_llm.py
+│   │   ├── local_llm_client.py
+│   │   ├── openai_client.py
+│   │   ├── prompt_templates copy.py
+│   │   ├── prompt_templates.py
+│   │   └── response_parser.py
+│   ├── llm_client_v2.py
+│   ├── model_selector.py
+│   ├── ollama_client.py
+│   ├── plugins/
+│   │   ├── __init__.py
+│   │   ├── base_plugin.py
+│   │   ├── code_formatter/
+│   │   │   ├── __init__.py
+│   │   │   ├── formatter_plugin.py
+│   │   │   └── language_formatters.py
+│   │   ├── export_tools/
+│   │   │   ├── __init__.py
+│   │   │   ├── export_formats.py
+│   │   │   └── export_plugin.py
+│   │   └── git_integration/
+│   │       ├── __init__.py
+│   │       ├── git_commands.py
+│   │       └── git_plugin.py
+│   ├── security/
+│   │   └── config_encryption.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── file_service.py
+│   │   ├── llm_service.py
+│   │   └── project_service.py
+│   ├── ui/
+│   │   ├── __init__.py
+│   │   ├── about_dialog.py
+│   │   ├── chat_interface.py
+│   │   ├── chat_panel.py
+│   │   ├── cli.py
+│   │   ├── code_editor.py
+│   │   ├── code_viewer.py
+│   │   ├── components/
+│   │   │   ├── auto_complete.py
+│   │   │   ├── chat_message_widget.py
+│   │   │   ├── custom_widgets.py
+│   │   │   ├── model_selector_widget.py
+│   │   │   ├── prompt_template_widget.py
+│   │   │   ├── syntax_highlighter.py
+│   │   │   └── theme_manager.py
+│   │   ├── file_manager.py
+│   │   ├── file_tree.py
+│   │   ├── find_replace_dialog.py
+│   │   ├── gui.py
+│   │   ├── llm_chat_panel.py
+│   │   ├── main_window.py
+│   │   ├── output_panel.py
+│   │   ├── progress_dialog.py
+│   │   ├── project_tree.py
+│   │   ├── qt_app.py
+│   │   └── settings_dialog.py
+│   └── utils/
+│       ├── __init__.py
+│       ├── backup_utils.py
+│       ├── code_parser.py
+│       ├── encryption_utils.py
+│       ├── file_utils.py
+│       ├── performance_monitor.py
+│       ├── system_utils.py
+│       ├── text_utils.py
+│       └── validation_utils.py
+├── temp/
+├── templates/
+│   ├── code_explanation.json
+│   ├── code_generation_basic.json
+│   ├── code_review_comprehensive.json
+│   ├── code_translation.json
+│   ├── debug_assistance.json
+│   ├── documentation_generation.json
+│   ├── general_chat.json
+│   └── general_question.json
+├── test_basic_functionality.py
+├── test_integration_final.py
+├── test_local_llm.py
+├── test_ollama_connection.py
+├── todolist.txt
+├── user_data/
+└── workspace/
+
 ## ✨ 主な機能
 
 ### 🤖 マルチ LLM サポート
